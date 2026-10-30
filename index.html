@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>새로이의 식물 관찰 일기</title>
+    
+    <!-- PWA 및 아이패드 홈 화면 아이콘 설정 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="새로이 식물일기">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/emoji/192/potted-plant-emoji.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Jua', sans-serif; background-color: #f0fdf4; -webkit-tap-highlight-color: transparent; }
+        .tab-active { background-color: #22c55e; color: white; transform: scale(1.05); }
+        .stage-selected { border-color: #22c55e !important; background-color: #f0fdf4 !important; font-weight: bold; }
+        .action-selected { background-color: #22c55e !important; color: white !important; border-color: #22c55e !important; }
+    </style>
+</head>
+<body class="p-4 max-w-2xl mx-auto text-gray-800 pb-20">
+
+    <!-- 헤더 -->
+    <header class="text-center my-6">
+        <h1 class="text-4xl text-green-600 drop-shadow-sm">🌿 새로이의 초록 정원 🍅</h1>
+        <p class="text-gray-500 mt-1">내가 직접 키우고 관찰하는 세상에 하나뿐인 일기장</p>
+    </header>
+
+    <!-- 메인 네비게이션 & 식물 탭 -->
+    <div class="bg-white p-4 rounded-2xl shadow-md mb-6">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xl text-green-700">🌱 내 식물 목록</h2>
+            <div class="flex gap-2">
+                <button onclick="toggleManageMode()" id="manageBtn" class="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full text-sm font-bold border border-gray-300">⚙️ 관리</button>
+                <button onclick="openNewPlantModal()" class="bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-bold shadow hover:bg-green-600 transition">+ 새 식물</button>
+            </div>
+        </div>
+        <div id="plantTabs" class="flex gap-2 overflow-x-auto pb-2 items-center">
+            <!-- 식물 탭들이 동적으로 생성됩니다 -->
+        </div>
+    </div>
+
+    <!-- 선택된 식물 대시보드 -->
+    <div id="dashboard" class="space-y-6">
+        <!-- 첫 모습 vs 오늘 모습 비교 카드 -->
+        <div class="bg-white p-5 rounded-2xl shadow-md">
+            <h3 class="text-lg text-green-700 mb-3 flex items-center gap-2">✨ 처음 모습과 오늘의 모습</h3>
+            <div class="grid grid-cols-2 gap-4 text-center">
+                <div class="border-2 border-dashed border-green-200 p-2 rounded-xl bg-green-50">
+                    <p class="text-xs text-gray-500 mb-1">처음 심었던 날 🌱</p>
+                    <div id="firstPhotoContainer" class="h-36 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden text-gray-400">사진 없음</div>
+                </div>
+                <div class="border-2 border-dashed border-green-200 p-2 rounded-xl bg-green-50">
+                    <p class="text-xs text-gray-500 mb-1">오늘 찍은 모습 📷</p>
+                    <div id="latestPhotoContainer" class="h-36 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden text-gray-400">사진 없음</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 오늘 관찰 기록 작성 버튼 -->
+        <button onclick="openRecordModal()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-2xl py-4 rounded-2xl shadow-lg hover:from-green-600 hover:to-emerald-700 transition transform active:scale-95 flex items-center justify-center gap-3">
+            📷 오늘 관찰 기록 쓰기!
+        </button>
+
+        <!-- 식물별 타임라인 앨범 -->
+        <div class="bg-white p-5 rounded-2xl shadow-md">
+            <h3 class="text-lg text-green-700 mb-4">📖 성장 타임라인 앨범</h3>
+            <div id="timelineList" class="space-y-4">
+                <!-- 타임라인 아이템이 생성됩니다 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 관찰 기록 작성 모달 -->
+    <div id="recordModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto shadow-2xl space-y-5">
+            <h2 class="text-2xl text-green-700 text-center">📝 오늘의 관찰 카드 쓰기</h2>
+            
+            <!-- 1. 사진 촬영 -->
+            <div>
+                <label class="block text-base font-bold text-gray-700 mb-1">1. 오늘의 식물 사진 📷</label>
+                <input type="file" id="photoInput" accept="image/*" capture="environment" class="hidden" onchange="previewImage(event)">
+                <div onclick="document.getElementById('photoInput').click()" id="photoPreviewBox" class="border-2 border-dashed border-green-400 h-44 rounded-2xl flex flex-col items-center justify-center bg-green-50 cursor-pointer hover:bg-green-100 transition text-green-600">
+                    <span class="text-4xl mb-1">📷</span>
+                    <span class="text-lg">터치해서 사진 찍기!</span>
+                </div>
+            </div>
+
+            <!-- 2. 세부 성장 단계 (6종) -->
+            <div>
+                <label class="block text-base font-bold text-gray-700 mb-1">2. 지금 식물은 어떤 모습인가요?</label>
+                <div class="grid grid-cols-2 gap-2" id="stageSelector">
+                    <button type="button" onclick="selectStage(this, '🌱 새싹이 쏙!')" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🌱 새싹이 쏙!</button>
+                    <button type="button" onclick="selectStage(this, '🌿 잎이 쑥쑥!')" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🌿 잎이 쑥쑥!</button>
+                    <button type="button" onclick="selectStage(this, '📏 키가 쑥 컸어요')" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">📏 키가 쑥 컸어요</button>
+                    <button type="button" onclick="selectStage(this, '🌸 예쁜 꽃이 펴요')" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🌸 예쁜 꽃이 펴요</button>
+                    <button type="button" onclick="selectStage(this, '🍅 열매가 열렸어요')" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🍅 열매가 열렸어요</button>
+                    <button type="button" onclick="selectStage(this, '🍂 잎이 시들어요')" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🍂 잎이 시들어요</button>
+                </div>
+            </div>
+
+            <!-- 3. 다양한 관찰점 상태 (세부 옵션) -->
+            <div class="space-y-3 bg-green-50/60 p-4 rounded-2xl border border-green-100">
+                <label class="block text-base font-bold text-gray-700">3. 식물을 자세히 살펴봐요 🔍</label>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <span class="text-xs text-gray-500">🍃 잎 색깔</span>
+                        <select id="leafColor" class="w-full p-2.5 border rounded-xl bg-white text-sm">
+                            <option>🟢 싱싱한 초록</option>
+                            <option>🟡 연두/노랑</option>
+                            <option>🟤 시든 갈색</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-500">📏 잎의 크기·양</span>
+                        <select id="leafSize" class="w-full p-2.5 border rounded-xl bg-white text-sm">
+                            <option>🌱 잎이 늘어남</option>
+                            <option>✋ 손바닥만함</option>
+                            <option>🙂 어제와 비슷</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-500">💧 흙 상태</span>
+                        <select id="soilState" class="w-full p-2.5 border rounded-xl bg-white text-sm">
+                            <option>💧 촉촉해요</option>
+                            <option>🙂 보통이에요</option>
+                            <option>☀️ 바짝 말랐어요</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-500">🐛 비밀 관찰</span>
+                        <select id="bugState" class="w-full p-2.5 border rounded-xl bg-white text-sm">
+                            <option>✨ 깨끗해요</option>
+                            <option>🐛 벌레 발견!</option>
+                            <option>💧 이슬이 맺힘</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. 새로이의 발견 (음성 인식) -->
+            <div>
+                <label class="block text-base font-bold text-gray-700 mb-1">4. 새로이가 발견한 것 🎤</label>
+                <div class="flex gap-2">
+                    <input type="text" id="voiceNoteInput" placeholder="마이크를 누르고 말해요!" class="flex-1 p-3 border-2 border-gray-200 rounded-xl">
+                    <button type="button" onclick="startSpeechRecognition()" class="bg-blue-500 text-white px-4 rounded-xl font-bold hover:bg-blue-600">🎤 말하기</button>
+                </div>
+            </div>
+
+            <!-- 5. 세부 행동 선택 -->
+            <div>
+                <label class="block text-base font-bold text-gray-700 mb-1">5. 오늘 내가 해준 일 👐</label>
+                <div class="flex flex-wrap gap-2" id="actionSelector">
+                    <button type="button" onclick="toggleAction(this)" class="action-btn px-3 py-2 border-2 border-gray-200 rounded-xl text-sm">💧 물 주기</button>
+                    <button type="button" onclick="toggleAction(this)" class="action-btn px-3 py-2 border-2 border-gray-200 rounded-xl text-sm">☀️ 햇빛 쬐어주기</button>
+                    <button type="button" onclick="toggleAction(this)" class="action-btn px-3 py-2 border-2 border-gray-200 rounded-xl text-sm">🧹 잎 닦아주기</button>
+                    <button type="button" onclick="toggleAction(this)" class="action-btn px-3 py-2 border-2 border-gray-200 rounded-xl text-sm">💊 영양제 주기</button>
+                    <button type="button" onclick="toggleAction(this)" class="action-btn px-3 py-2 border-2 border-gray-200 rounded-xl text-sm">❤️ "사랑해" 말하기</button>
+                </div>
+            </div>
+
+            <!-- 모달 하단 버튼 -->
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeRecordModal()" class="flex-1 bg-gray-200 py-3.5 rounded-xl font-bold hover:bg-gray-300">취소</button>
+                <button onclick="saveRecord()" class="flex-1 bg-green-500 text-white py-3.5 rounded-xl font-bold hover:bg-green-600 shadow-md">저장하기 🎉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 새 식물 추가 모달 -->
+    <div id="newPlantModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl">
+            <h2 class="text-xl text-green-700 mb-3 text-center">🌱 새로운 식물 등록</h2>
+            <input type="text" id="newPlantName" placeholder="식물 이름 (예: 바질 🌿)" class="w-full p-3 border-2 border-gray-200 rounded-xl mb-4">
+            <div class="flex gap-3">
+                <button onclick="closeNewPlantModal()" class="flex-1 bg-gray-200 py-3 rounded-xl font-bold">취소</button>
+                <button onclick="addNewPlant()" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold">등록하기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db = JSON.parse(localStorage.getItem('plant_db')) || {
+            "방울토마토 🍅": []
+        };
+        let currentPlant = Object.keys(db)[0] || "방울토마토 🍅";
+        let isManageMode = false;
+        let capturedImage = null;
+        let selectedStageText = "🌱 새싹이 쏙!";
+
+        function initApp() {
+            renderTabs();
+            renderDashboard();
+        }
+
+        function toggleManageMode() {
+            isManageMode = !isManageMode;
+            document.getElementById('manageBtn').innerText = isManageMode ? "✅ 완료" : "⚙️ 관리";
+            renderTabs();
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('plantTabs');
+            container.innerHTML = '';
+            Object.keys(db).forEach(plant => {
+                const wrapper = document.createElement('div');
+                wrapper.className = "flex items-center gap-1 bg-white p-1 rounded-xl border border-gray-200 shadow-sm";
+
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-1.5 rounded-lg text-base transition ${plant === currentPlant ? 'tab-active' : 'text-gray-700'}`;
+                btn.innerText = plant;
+                btn.onclick = () => { currentPlant = plant; renderDashboard(); };
+                wrapper.appendChild(btn);
+
+                if (isManageMode) {
+                    const editBtn = document.createElement('button');
+                    editBtn.innerText = "✏️";
+                    editBtn.className = "text-xs p-1 hover:bg-gray-100 rounded";
+                    editBtn.onclick = (e) => { e.stopPropagation(); editPlantName(plant); };
+
+                    const delBtn = document.createElement('button');
+                    delBtn.innerText = "🗑️";
+                    delBtn.className = "text-xs p-1 hover:bg-gray-100 rounded";
+                    delBtn.onclick = (e) => { e.stopPropagation(); deletePlant(plant); };
+
+                    wrapper.appendChild(editBtn);
+                    wrapper.appendChild(delBtn);
+                }
+
+                container.appendChild(wrapper);
+            });
+        }
+
+        function editPlantName(oldName) {
+            const newName = prompt('식물 이름을 수정해 주세요:', oldName);
+            if (newName && newName.trim() !== '' && newName !== oldName) {
+                db[newName.trim()] = db[oldName];
+                delete db[oldName];
+                if (currentPlant === oldName) currentPlant = newName.trim();
+                saveDB();
+                renderTabs();
+            }
+        }
+
+        function deletePlant(plantName) {
+            if (Object.keys(db).length <= 1) {
+                alert('최소 하나의 식물은 남아있어야 해요!');
+                return;
+            }
+            if (confirm(`'${plantName}' 식물을 삭제할까요? 기록도 함께 사라져요.`)) {
+                delete db[plantName];
+                currentPlant = Object.keys(db)[0];
+                saveDB();
+                renderTabs();
+                renderDashboard();
+            }
+        }
+
+        function renderDashboard() {
+            renderTabs();
+            const records = db[currentPlant] || [];
+            
+            const firstBox = document.getElementById('firstPhotoContainer');
+            const latestBox = document.getElementById('latestPhotoContainer');
+            
+            if (records.length > 0) {
+                firstBox.innerHTML = `<img src="${records[0].photo}" class="w-full h-full object-cover rounded-lg">`;
+                latestBox.innerHTML = `<img src="${records[records.length - 1].photo}" class="w-full h-full object-cover rounded-lg">`;
+            } else {
+                firstBox.innerHTML = "기록 없음";
+                latestBox.innerHTML = "기록 없음";
+            }
+
+            const timeline = document.getElementById('timelineList');
+            timeline.innerHTML = '';
+            if (records.length === 0) {
+                timeline.innerHTML = `<p class="text-center text-gray-400 py-8">아직 관찰 기록이 없어요.<br>첫 관찰 기록을 남겨보세요! 📷</p>`;
+                return;
+            }
+
+            [...records].reverse().forEach((rec) => {
+                const item = document.createElement('div');
+                item.className = "flex gap-4 p-4 border-2 border-green-100 rounded-2xl bg-green-50/50 items-center";
+                item.innerHTML = `
+                    <img src="${rec.photo}" class="w-20 h-20 object-cover rounded-xl shadow">
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-green-800">${rec.date}</span>
+                            <span class="bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded-full font-bold">${rec.stage}</span>
+                        </div>
+                        <p class="text-sm text-gray-700 font-bold mb-1">💬 "${rec.note || '오늘도 무럭무럭 자라라!'}"</p>
+                        <p class="text-xs text-gray-500">🔍 ${rec.leafColor} | ${rec.soil} | ${rec.bugState}</p>
+                        <p class="text-xs text-green-600 mt-0.5">👐 ${rec.actions.join(', ')}</p>
+                    </div>
+                `;
+                timeline.appendChild(item);
+            });
+        }
+
+        function openRecordModal() {
+            capturedImage = null;
+            document.getElementById('photoPreviewBox').innerHTML = `<span class="text-4xl mb-1">📷</span><span class="text-lg">터치해서 사진 찍기!</span>`;
+            document.getElementById('voiceNoteInput').value = '';
+            document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('action-selected'));
+            document.getElementById('recordModal').classList.remove('hidden');
+        }
+
+        function closeRecordModal() {
+            document.getElementById('recordModal').classList.add('hidden');
+        }
+
+        function openNewPlantModal() {
+            document.getElementById('newPlantModal').classList.remove('hidden');
+        }
+
+        function closeNewPlantModal() {
+            document.getElementById('newPlantModal').classList.add('hidden');
+        }
+
+        function addNewPlant() {
+            const name = document.getElementById('newPlantName').value.trim();
+            if (!name) return alert('식물 이름을 입력해 주세요!');
+            if (db[name]) return alert('이미 존재하는 식물이에요!');
+            db[name] = [];
+            currentPlant = name;
+            saveDB();
+            document.getElementById('newPlantName').value = '';
+            closeNewPlantModal();
+            initApp();
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    capturedImage = e.target.result;
+                    document.getElementById('photoPreviewBox').innerHTML = `<img src="${capturedImage}" class="w-full h-full object-cover rounded-2xl">`;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function selectStage(btn, text) {
+            document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('stage-selected'));
+            btn.classList.add('stage-selected');
+            selectedStageText = text;
+        }
+
+        function toggleAction(btn) {
+            btn.classList.toggle('action-selected');
+        }
+
+        function startSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('음성 인식을 지원하지 않는 브라우저입니다. 직접 작성해 주세요!');
+                return;
+            }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ko-KR';
+            recognition.onstart = () => { document.getElementById('voiceNoteInput').placeholder = "듣고 있어요... 말씀하세요!"; };
+            recognition.onresult = (event) => {
+                document.getElementById('voiceNoteInput').value = event.results[0][0].transcript;
+                document.getElementById('voiceNoteInput').placeholder = "마이크를 누르고 말해요!";
+            };
+            recognition.start();
+        }
+
+        function saveRecord() {
+            if (!capturedImage) {
+                alert('식물 사진을 꼭 찍어주세요! 📷');
+                return;
+            }
+
+            const today = new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
+            const actions = Array.from(document.querySelectorAll('.action-btn.action-selected')).map(b => b.innerText);
+
+            db[currentPlant].push({
+                date: today,
+                photo: capturedImage,
+                stage: selectedStageText,
+                leafColor: document.getElementById('leafColor').value,
+                leafSize: document.getElementById('leafSize').value,
+                soil: document.getElementById('soilState').value,
+                bugState: document.getElementById('bugState').value,
+                note: document.getElementById('voiceNoteInput').value,
+                actions: actions.length > 0 ? actions : ['보기만 했어요 👀']
+            });
+
+            saveDB();
+            closeRecordModal();
+            initApp();
+
+            confetti({
+                particleCount: 120,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+
+        function saveDB() {
+            localStorage.setItem('plant_db', JSON.stringify(db));
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
