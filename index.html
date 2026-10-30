@@ -17,7 +17,7 @@
     <style>
         body { font-family: 'Jua', sans-serif; background-color: #f0fdf4; -webkit-tap-highlight-color: transparent; }
         .tab-active { background-color: #22c55e; color: white; transform: scale(1.05); }
-        .stage-selected { border-color: #22c55e !important; background-color: #f0fdf4 !important; font-weight: bold; }
+        .stage-selected { border-color: #22c55e !important; background-color: #f0fdf4 !important; font-weight: bold; color: #15803d !important; }
         .action-selected { background-color: #22c55e !important; color: white !important; border-color: #22c55e !important; }
     </style>
 </head>
@@ -82,7 +82,6 @@
             <!-- 1. 사진 촬영 및 앨범 불러오기 -->
             <div>
                 <label class="block text-base font-bold text-gray-700 mb-1">1. 오늘의 식물 사진 📷</label>
-                <!-- 파일 선택 input (capture 없이 생성하여 사진앱 선택 및 카메라 모두 지원) -->
                 <input type="file" id="photoInput" accept="image/*" class="hidden" onchange="previewImage(event)">
                 
                 <div id="photoPreviewBox" class="border-2 border-dashed border-green-400 h-40 rounded-2xl flex flex-col items-center justify-center bg-green-50 cursor-pointer hover:bg-green-100 transition text-green-600 mb-2" onclick="document.getElementById('photoInput').click()">
@@ -90,7 +89,6 @@
                     <span class="text-base">터치해서 사진 선택하기!</span>
                 </div>
                 
-                <!-- 추가 버튼 (카메라 직접 촬영 또는 사진 보관함 선택 직관적 유도) -->
                 <div class="grid grid-cols-2 gap-2">
                     <button type="button" onclick="document.getElementById('photoInput').click()" class="bg-green-100 text-green-700 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 hover:bg-green-200">
                         📁 사진 보관함에서 고르기
@@ -101,16 +99,16 @@
                 </div>
             </div>
 
-            <!-- 2. 세부 성장 단계 (6종) -->
+            <!-- 2. 세부 성장 단계 (6종 - 다중 선택 가능) -->
             <div>
-                <label class="block text-base font-bold text-gray-700 mb-1">2. 지금 식물은 어떤 모습인가요?</label>
+                <label class="block text-base font-bold text-gray-700 mb-1">2. 지금 식물은 어떤 모습인가요? (여러 개 선택 가능)</label>
                 <div class="grid grid-cols-2 gap-2" id="stageSelector">
-                    <button type="button" onclick="selectStage(this, '🌱 새싹이 쏙!')" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🌱 새싹이 쏙!</button>
-                    <button type="button" onclick="selectStage(this, '🌿 잎이 쑥쑥!')" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🌿 잎이 쑥쑥!</button>
-                    <button type="button" onclick="selectStage(this, '📏 키가 쑥 컸어요')" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">📏 키가 쑥 컸어요</button>
-                    <button type="button" onclick="selectStage(this, '🌸 예쁜 꽃이 펴요')" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🌸 예쁜 꽃이 펴요</button>
-                    <button type="button" onclick="selectStage(this, '🍅 열매가 열렸어요')" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🍅 열매가 열렸어요</button>
-                    <button type="button" onclick="selectStage(this, '🍂 잎이 시들어요')" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🍂 잎이 시들어요</button>
+                    <button type="button" onclick="toggleStage(this)" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🌱 새싹이 쏙!</button>
+                    <button type="button" onclick="toggleStage(this)" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🌿 잎이 쑥쑥!</button>
+                    <button type="button" onclick="toggleStage(this)" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">📏 키가 쑥 컸어요</button>
+                    <button type="button" onclick="toggleStage(this)" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🌸 예쁜 꽃이 펴요</button>
+                    <button type="button" onclick="toggleStage(this)" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🍅 열매가 열렸어요</button>
+                    <button type="button" onclick="toggleStage(this)" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🍂 잎이 시들어요</button>
                 </div>
             </div>
 
@@ -177,8 +175,8 @@
 
             <!-- 모달 하단 버튼 -->
             <div class="flex gap-3 pt-2">
-                <button onclick="closeRecordModal()" class="flex-1 bg-gray-200 py-3.5 rounded-xl font-bold hover:bg-gray-300">취소</button>
-                <button onclick="saveRecord()" class="flex-1 bg-green-500 text-white py-3.5 rounded-xl font-bold hover:bg-green-600 shadow-md">저장하기 🎉</button>
+                <button type="button" onclick="closeRecordModal()" class="flex-1 bg-gray-200 py-3.5 rounded-xl font-bold hover:bg-gray-300">취소</button>
+                <button type="button" onclick="saveRecord()" class="flex-1 bg-green-500 text-white py-3.5 rounded-xl font-bold hover:bg-green-600 shadow-md">저장하기 🎉</button>
             </div>
         </div>
     </div>
@@ -189,8 +187,8 @@
             <h2 class="text-xl text-green-700 mb-3 text-center">🌱 새로운 식물 등록</h2>
             <input type="text" id="newPlantName" placeholder="식물 이름 (예: 바질 🌿)" class="w-full p-3 border-2 border-gray-200 rounded-xl mb-4">
             <div class="flex gap-3">
-                <button onclick="closeNewPlantModal()" class="flex-1 bg-gray-200 py-3 rounded-xl font-bold">취소</button>
-                <button onclick="addNewPlant()" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold">등록하기</button>
+                <button type="button" onclick="closeNewPlantModal()" class="flex-1 bg-gray-200 py-3 rounded-xl font-bold">취소</button>
+                <button type="button" onclick="addNewPlant()" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold">등록하기</button>
             </div>
         </div>
     </div>
@@ -202,7 +200,6 @@
         let currentPlant = Object.keys(db)[0] || "방울토마토 🍅";
         let isManageMode = false;
         let capturedImage = null;
-        let selectedStageText = "🌱 새싹이 쏙!";
 
         function initApp() {
             renderTabs();
@@ -302,7 +299,7 @@
                     <div class="flex-1">
                         <div class="flex justify-between items-center mb-1">
                             <span class="font-bold text-green-800">${rec.date}</span>
-                            <span class="bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded-full font-bold">${rec.stage}</span>
+                            <span class="bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded-full font-bold">${rec.stages.join(', ')}</span>
                         </div>
                         <p class="text-sm text-gray-700 font-bold mb-1">💬 "${rec.note || '오늘도 무럭무럭 자라라!'}"</p>
                         <p class="text-xs text-gray-500">🔍 ${rec.leafColor} | ${rec.soil} | ${rec.bugState}</p>
@@ -317,6 +314,7 @@
             capturedImage = null;
             document.getElementById('photoPreviewBox').innerHTML = `<span class="text-3xl mb-1">📷</span><span class="text-base">터치해서 사진 선택하기!</span>`;
             document.getElementById('voiceNoteInput').value = '';
+            document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('stage-selected'));
             document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('action-selected'));
             document.getElementById('recordModal').classList.remove('hidden');
         }
@@ -357,10 +355,8 @@
             }
         }
 
-        function selectStage(btn, text) {
-            document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('stage-selected'));
-            btn.classList.add('stage-selected');
-            selectedStageText = text;
+        function toggleStage(btn) {
+            btn.classList.toggle('stage-selected');
         }
 
         function toggleAction(btn) {
@@ -389,13 +385,15 @@
                 return;
             }
 
-            const today = new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
+            const stages = Array.from(document.querySelectorAll('.stage-btn.stage-selected')).map(b => b.innerText);
             const actions = Array.from(document.querySelectorAll('.action-btn.action-selected')).map(b => b.innerText);
+
+            const today = new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
 
             db[currentPlant].push({
                 date: today,
                 photo: capturedImage,
-                stage: selectedStageText,
+                stages: stages.length > 0 ? stages : ['🌱 무럭무럭 자라는 중'],
                 leafColor: document.getElementById('leafColor').value,
                 leafSize: document.getElementById('leafSize').value,
                 soil: document.getElementById('soilState').value,
