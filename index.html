@@ -19,6 +19,12 @@
         .tab-active { background-color: #22c55e; color: white; transform: scale(1.05); }
         .stage-selected { border-color: #22c55e !important; background-color: #f0fdf4 !important; font-weight: bold; color: #15803d !important; }
         .action-selected { background-color: #22c55e !important; color: white !important; border-color: #22c55e !important; }
+        .mic-recording { animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body class="p-4 max-w-2xl mx-auto text-gray-800 pb-20">
@@ -42,7 +48,7 @@
             </div>
         </div>
         <div id="plantTabs" class="flex gap-2 overflow-x-auto pb-2 items-center">
-            <!-- 식물 탭들이 동적으로 생성됩니다 -->
+            <!-- 식물 탭 생성을 위한 자리 -->
         </div>
     </div>
 
@@ -72,7 +78,7 @@
         <div class="bg-white p-5 rounded-2xl shadow-md">
             <h3 class="text-lg text-green-700 mb-4">📖 성장 타임라인 앨범</h3>
             <div id="timelineList" class="space-y-4">
-                <!-- 타임라인 아이템이 생성됩니다 -->
+                <!-- 타임라인 항목 생성 자리 -->
             </div>
         </div>
     </div>
@@ -86,7 +92,6 @@
             <div>
                 <label class="block text-base font-bold text-green-700 mb-1">0. 어떤 식물인가요? 🌱</label>
                 <select id="recordPlantSelect" class="w-full p-3 border-2 border-green-300 rounded-xl bg-green-50 text-base font-bold text-green-900">
-                    <!-- 동적 생성 -->
                 </select>
             </div>
 
@@ -110,9 +115,9 @@
                 </div>
             </div>
 
-            <!-- 2. 세부 성장 단계 (6종 - 다중 선택 가능) -->
+            <!-- 2. 세부 성장 단계 (6종) -->
             <div>
-                <label class="block text-base font-bold text-gray-700 mb-1">2. 지금 식물은 어떤 모습인가요? (여러 개 선택 가능)</label>
+                <label class="block text-base font-bold text-gray-700 mb-1">2. 지금 식물은 어떤 모습인가요? (중복 가능)</label>
                 <div class="grid grid-cols-2 gap-2" id="stageSelector">
                     <button type="button" onclick="toggleStage(this)" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🌱 새싹이 쏙!</button>
                     <button type="button" onclick="toggleStage(this)" class="stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-sm">🌿 잎이 쑥쑥!</button>
@@ -123,7 +128,7 @@
                 </div>
             </div>
 
-            <!-- 3. 다양한 관찰점 상태 (세부 옵션) -->
+            <!-- 3. 다양한 관찰점 상태 -->
             <div class="space-y-3 bg-green-50/60 p-4 rounded-2xl border border-green-100">
                 <label class="block text-base font-bold text-gray-700">3. 식물을 자세히 살펴봐요 🔍</label>
                 
@@ -163,12 +168,14 @@
                 </div>
             </div>
 
-            <!-- 4. 새로이의 발견 (음성 인식) -->
+            <!-- 4. 새로이의 발견 (개선된 토글형 음성 인식) -->
             <div>
                 <label class="block text-base font-bold text-gray-700 mb-1">4. 새로이가 발견한 것 🎤</label>
                 <div class="flex gap-2">
-                    <input type="text" id="voiceNoteInput" placeholder="마이크를 누르고 말해요!" class="flex-1 p-3 border-2 border-gray-200 rounded-xl">
-                    <button type="button" onclick="startSpeechRecognition()" class="bg-blue-500 text-white px-4 rounded-xl font-bold hover:bg-blue-600">🎤 말하기</button>
+                    <input type="text" id="voiceNoteInput" placeholder="버튼을 누르고 말해요!" class="flex-1 p-3 border-2 border-gray-200 rounded-xl">
+                    <button type="button" id="speechBtn" onclick="toggleSpeechRecognition()" class="bg-blue-500 text-white px-4 rounded-xl font-bold hover:bg-blue-600 transition flex items-center gap-1">
+                        <span id="speechBtnText">🎤 말하기</span>
+                    </button>
                 </div>
             </div>
 
@@ -211,6 +218,36 @@
         let currentPlant = "방울토마토 🍅";
         let isManageMode = false;
         let capturedImage = null;
+        let recognition = null;
+        let isRecording = false;
+
+        // 효과음 및 햅틱 생성 함수
+        function playSound(freq, duration) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + duration);
+                osc.stop(ctx.currentTime + duration);
+            } catch(e){}
+        }
+
+        function triggerHaptic() {
+            if (navigator.vibrate) navigator.vibrate(50);
+        }
+
+        // 데이터 영구 저장소 신청 (Safari 캐시 삭제 방지)
+        async function requestPersistentStorage() {
+            if (navigator.storage && navigator.storage.persist) {
+                const isPersisted = await navigator.storage.persist();
+                console.log(`[Storage] Persistent storage granted: ${isPersisted}`);
+            }
+        }
 
         // IndexedDB 초기화
         function initDB() {
@@ -245,8 +282,8 @@
                 const transaction = db.transaction(STORE_NAME, 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
                 const request = store.add(record);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = (e) => reject(e.target.error);
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = (e) => reject(e.target.error);
             });
         }
 
@@ -255,13 +292,9 @@
             const transaction = db.transaction(STORE_NAME, 'readwrite');
             const store = transaction.objectStore(STORE_NAME);
             records.forEach(rec => {
-                if (rec.plantName === plantName) {
-                    store.delete(rec.id);
-                }
+                if (rec.plantName === plantName) store.delete(rec.id);
             });
-            return new Promise((resolve) => {
-                transaction.oncomplete = () => resolve();
-            });
+            return new Promise((resolve) => transaction.oncomplete = () => resolve());
         }
 
         async function renamePlantInDB(oldName, newName) {
@@ -274,12 +307,9 @@
                     store.put(rec);
                 }
             });
-            return new Promise((resolve) => {
-                transaction.oncomplete = () => resolve();
-            });
+            return new Promise((resolve) => transaction.oncomplete = () => resolve());
         }
 
-        // 식물 목록 관리 (localStorage 보조 활용)
         function getPlantList() {
             return JSON.parse(localStorage.getItem('plant_list')) || ["방울토마토 🍅"];
         }
@@ -290,6 +320,7 @@
 
         async function initApp() {
             try {
+                await requestPersistentStorage();
                 await initDB();
                 let plants = getPlantList();
                 if (!plants.includes(currentPlant)) {
@@ -381,8 +412,6 @@
             renderTabs();
             const allRecords = await getAllRecords();
             const records = allRecords.filter(r => r.plantName === currentPlant);
-            
-            // 날짜순 정렬
             records.sort((a, b) => a.id - b.id);
 
             const firstBox = document.getElementById('firstPhotoContainer');
@@ -443,6 +472,7 @@
         }
 
         function closeRecordModal() {
+            if (isRecording) stopSpeechRecognition();
             document.getElementById('recordModal').classList.add('hidden');
         }
 
@@ -514,20 +544,66 @@
             btn.classList.toggle('action-selected');
         }
 
+        // 토글형 음성 인식 제어
+        function toggleSpeechRecognition() {
+            if (isRecording) {
+                stopSpeechRecognition();
+            } else {
+                startSpeechRecognition();
+            }
+        }
+
         function startSpeechRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
                 alert('음성 인식을 지원하지 않는 브라우저입니다. 직접 작성해 주세요!');
                 return;
             }
-            const recognition = new SpeechRecognition();
+
+            recognition = new SpeechRecognition();
             recognition.lang = 'ko-KR';
-            recognition.onstart = () => { document.getElementById('voiceNoteInput').placeholder = "듣고 있어요... 말씀하세요!"; };
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                isRecording = true;
+                triggerHaptic();
+                playSound(880, 0.15); // 높은 알림 톤 (시작 신호)
+                const btn = document.getElementById('speechBtn');
+                btn.className = "bg-red-500 text-white px-4 rounded-xl font-bold mic-recording transition flex items-center gap-1";
+                document.getElementById('speechBtnText').innerText = "🔴 듣는 중... (터치시 완료)";
+                document.getElementById('voiceNoteInput').placeholder = "지금 말씀하세요!";
+            };
+
             recognition.onresult = (event) => {
                 document.getElementById('voiceNoteInput').value = event.results[0][0].transcript;
-                document.getElementById('voiceNoteInput').placeholder = "마이크를 누르고 말해요!";
             };
+
+            recognition.onerror = () => {
+                stopSpeechRecognition();
+            };
+
+            recognition.onend = () => {
+                stopSpeechRecognition();
+            };
+
             recognition.start();
+        }
+
+        function stopSpeechRecognition() {
+            if (recognition) {
+                try { recognition.stop(); } catch(e){}
+                recognition = null;
+            }
+            if (isRecording) {
+                isRecording = false;
+                triggerHaptic();
+                playSound(440, 0.15); // 낮은 톤 (종료 신호)
+                const btn = document.getElementById('speechBtn');
+                btn.className = "bg-blue-500 text-white px-4 rounded-xl font-bold hover:bg-blue-600 transition flex items-center gap-1";
+                document.getElementById('speechBtnText').innerText = "🎤 말하기";
+                document.getElementById('voiceNoteInput').placeholder = "버튼을 누르고 말해요!";
+            }
         }
 
         async function saveRecord() {
@@ -565,7 +641,6 @@
             });
         }
 
-        // 데이터 백업 (JSON 파일로 다운로드)
         async function exportData() {
             const records = await getAllRecords();
             const plants = getPlantList();
@@ -579,7 +654,6 @@
             dlAnchor.remove();
         }
 
-        // 데이터 복원 (JSON 파일 업로드)
         async function importData(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -589,14 +663,13 @@
                     const backupData = JSON.parse(e.target.result);
                     if (backupData.plants && backupData.records) {
                         savePlantList(backupData.plants);
-                        // 기존 IndexedDB 비우고 새로 채우기
                         const records = await getAllRecords();
                         const transaction = db.transaction(STORE_NAME, 'readwrite');
                         const store = transaction.objectStore(STORE_NAME);
                         records.forEach(r => store.delete(r.id));
                         
                         backupData.records.forEach(r => {
-                            delete r.id; // 새 ID 부여
+                            delete r.id;
                             store.add(r);
                         });
 
