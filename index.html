@@ -90,7 +90,7 @@
             <div class="flex items-center justify-between border-b pb-3">
                 <button type="button" onclick="closeRecordModal()" class="text-green-700 font-bold text-base bg-green-50 px-3 py-1.5 rounded-xl hover:bg-green-100">〈 뒤로</button>
                 <h2 id="modalTitle" class="text-xl text-green-700 font-bold text-center flex-1">📝 오늘의 관찰 카드 쓰기</h2>
-                <div class="w-16"></div> <!-- 여백 맞춤 -->
+                <div class="w-16"></div>
             </div>
             
             <!-- 0. 식물 선택 -->
@@ -103,9 +103,7 @@
             <!-- 1. 사진 촬영 및 앨범 불러오기 -->
             <div>
                 <label class="block text-base font-bold text-gray-700 mb-1">1. 오늘의 식물 사진 📷</label>
-                <!-- 일반 갤러리/파일 선택기 -->
                 <input type="file" id="photoInput" accept="image/*" class="hidden" onchange="previewImage(event)">
-                <!-- 카메라 다이렉트 촬영기 -->
                 <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="previewImage(event)">
                 
                 <div id="photoPreviewBox" class="border-2 border-dashed border-green-400 h-44 rounded-2xl flex flex-col items-center justify-center bg-green-50 cursor-pointer hover:bg-green-100 transition text-green-600 mb-2 overflow-hidden" onclick="document.getElementById('photoInput').click()">
@@ -179,7 +177,7 @@
                 </div>
             </div>
 
-            <!-- 4. 새로이의 발견 (아이콘형 음성 인식 + 전체 지우기 x 버튼) -->
+            <!-- 4. 새로이의 발견 -->
             <div>
                 <label class="block text-base font-bold text-gray-700 mb-1">4. 새로이가 발견한 것 🎤</label>
                 <div class="flex gap-2 items-center">
@@ -240,7 +238,7 @@
         let currentPlant = "방울토마토 🍅";
         let isManageMode = false;
         let capturedImage = null;
-        let editingRecordId = null; // 수정 중인 기록 ID
+        let editingRecordId = null;
         let recognition = null;
         let isRecording = false;
 
@@ -506,7 +504,6 @@
             document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('stage-selected'));
             document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('action-selected'));
 
-            // 식물 선택 드롭다운 채우기
             const select = document.getElementById('recordPlantSelect');
             select.innerHTML = '';
             getPlantList().forEach(plant => {
@@ -527,20 +524,17 @@
                     document.getElementById('voiceNoteInput').value = rec.note || '';
                     checkInputText();
 
-                    // 단계 복원
                     document.querySelectorAll('.stage-btn').forEach(b => {
                         if (rec.stages && rec.stages.includes(b.innerText)) {
                             b.classList.add('stage-selected');
                         }
                     });
 
-                    // 관찰 상태 복원
                     if (rec.leafColor) document.getElementById('leafColor').value = rec.leafColor;
                     if (rec.leafSize) document.getElementById('leafSize').value = rec.leafSize;
                     if (rec.soil) document.getElementById('soilState').value = rec.soil;
                     if (rec.bugState) document.getElementById('bugState').value = rec.bugState;
 
-                    // 행동 복원
                     document.querySelectorAll('.action-btn').forEach(b => {
                         if (rec.actions && rec.actions.includes(b.innerText)) {
                             b.classList.add('action-selected');
@@ -748,35 +742,42 @@
             });
         }
 
-        // 이미지 확대 관련 함수
-        function showImageZoom(src) {
-            if (!src || src.includes('사진 없음')) return;
-            document.getElementById('zoomedImage').src = src;
-            document.getElementById('imageZoomModal').classList.remove('hidden');
-        }
-
-        function showImageZoomFromContainer(container) {
-            const img = container.querySelector('img');
-            if (img && img.src) {
-                showImageZoom(img.src);
-            }
-        }
-
-        function closeImageZoom() {
-            document.getElementById('imageZoomModal').classList.add('hidden');
-        }
-
+        // 아이폰/아이패드 PWA 최적화 백업 기능 (Web Share API 적용)
         async function exportData() {
-            const records = await getAllRecords();
-            const plants = getPlantList();
-            const backupData = { plants, records };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
-            const dlAnchor = document.createElement('a');
-            dlAnchor.setAttribute("href", dataStr);
-            dlAnchor.setAttribute("download", "plant_journal_backup.json");
-            document.body.appendChild(dlAnchor);
-            dlAnchor.click();
-            dlAnchor.remove();
+            try {
+                const records = await getAllRecords();
+                const plants = getPlantList();
+                const backupData = { plants, records };
+                const jsonString = JSON.stringify(backupData, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const fileName = `plant_journal_backup_${new Date().toISOString().slice(0,10)}.json`;
+
+                // iOS/iPadOS 공유 시트 지원 시 바로 시스템 공유 창 띄우기 (파일에 저장, 카카오톡 등)
+                if (navigator.canShare) {
+                    const file = new File([blob], fileName, { type: 'application/json' });
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            title: '새로이 식물일기 백업',
+                            files: [file]
+                        });
+                        return;
+                    }
+                }
+
+                // 지원하지 않는 경우 기존 다운로드 링크 방식 Fallback
+                const url = URL.createObjectURL(blob);
+                const dlAnchor = document.createElement('a');
+                dlAnchor.href = url;
+                dlAnchor.download = fileName;
+                document.body.appendChild(dlAnchor);
+                dlAnchor.click();
+                dlAnchor.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    alert('백업 파일 생성 중 오류가 발생했습니다.');
+                }
+            }
         }
 
         async function importData(event) {
@@ -811,6 +812,23 @@
                 }
             };
             reader.readAsText(file);
+        }
+
+        function showImageZoom(src) {
+            if (!src || src.includes('사진 없음')) return;
+            document.getElementById('zoomedImage').src = src;
+            document.getElementById('imageZoomModal').classList.remove('hidden');
+        }
+
+        function showImageZoomFromContainer(container) {
+            const img = container.querySelector('img');
+            if (img && img.src) {
+                showImageZoom(img.src);
+            }
+        }
+
+        function closeImageZoom() {
+            document.getElementById('imageZoomModal').classList.add('hidden');
         }
 
         initApp();
