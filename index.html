@@ -16,7 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Jua', sans-serif; background-color: #f0fdf4; -webkit-tap-highlight-color: transparent; font-size: 1.1rem; }
-        .tab-active { background-color: #22c55e; color: white; transform: scale(1.05); }
+        .tab-active { background-color: #22c55e !important; color: white !important; border-color: #16a34a !important; box-shadow: 0 2px 6px rgba(34,197,94,.4); }
         .stage-selected { border-color: #22c55e !important; background-color: #f0fdf4 !important; font-weight: bold; color: #15803d !important; }
         .action-selected { background-color: #22c55e !important; color: white !important; border-color: #22c55e !important; }
         .mic-recording { animation: pulse 1.5s infinite; }
@@ -33,16 +33,25 @@
     <!-- 식물 탭 (백업/복원은 ⚙️ 관리 모드에서만 보임) -->
     <div class="bg-white p-4 rounded-2xl shadow-md mb-6">
         <div class="flex items-center justify-between mb-3">
-            <h2 class="text-xl text-green-700 font-bold">🌱 내 식물 목록</h2>
-            <div class="flex gap-1.5 flex-wrap justify-end">
-                <button type="button" onclick="toggleManageMode()" id="manageBtn" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm font-bold border border-gray-300">⚙️ 관리</button>
-                <button type="button" onclick="exportData()" id="exportBtn" class="hidden bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full text-sm font-bold border border-blue-200">📤 백업</button>
-                <button type="button" onclick="document.getElementById('importFileInput').click()" id="importBtn" class="hidden bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full text-sm font-bold border border-blue-200">📥 복원</button>
+            <h2 class="text-xl text-green-700 font-bold whitespace-nowrap">🌱 내 식물 목록</h2>
+            <div class="flex gap-1.5 flex-shrink-0">
+                <button type="button" onclick="toggleManageMode()" id="manageBtn" class="whitespace-nowrap bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-bold border border-gray-300">⚙️ 관리</button>
                 <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="importData(event)">
-                <button type="button" onclick="openNewPlantModal()" class="bg-green-500 text-white px-3.5 py-1.5 rounded-full text-sm font-bold shadow hover:bg-green-600 transition">+ 새 식물</button>
+                <button type="button" onclick="openNewPlantModal()" class="whitespace-nowrap bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-green-600 transition">+ 새 식물</button>
             </div>
         </div>
-        <div id="plantTabs" class="flex gap-2 overflow-x-auto pb-2 items-center"></div>
+        <div id="plantTabs" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+        <div id="managePanel" class="hidden mt-3 p-3 rounded-2xl bg-gray-50 border border-gray-200 space-y-2">
+            <p class="text-sm text-gray-600">선택한 식물: <span id="manageTarget" class="font-bold text-green-700"></span></p>
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="editPlantName(currentPlant)" class="whitespace-nowrap bg-white text-gray-700 py-2.5 rounded-xl text-base font-bold border border-gray-300">✏️ 이름 바꾸기</button>
+                <button type="button" onclick="deletePlant(currentPlant)" class="whitespace-nowrap bg-white text-red-500 py-2.5 rounded-xl text-base font-bold border border-red-200">🗑️ 식물 삭제</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200">
+                <button type="button" onclick="exportData()" class="whitespace-nowrap bg-blue-50 text-blue-600 py-2.5 rounded-xl text-base font-bold border border-blue-200">📤 백업</button>
+                <button type="button" onclick="document.getElementById('importFileInput').click()" class="whitespace-nowrap bg-blue-50 text-blue-600 py-2.5 rounded-xl text-base font-bold border border-blue-200">📥 복원</button>
+            </div>
+        </div>
     </div>
 
     <div id="dashboard" class="space-y-6">
@@ -342,7 +351,7 @@
         function toggleManageMode() {
             isManageMode = !isManageMode;
             $('manageBtn').innerText = isManageMode ? "✅ 완료" : "⚙️ 관리";
-            ['exportBtn', 'importBtn'].forEach(id => $(id).classList.toggle('hidden', !isManageMode));
+            $('managePanel').classList.toggle('hidden', !isManageMode);
             renderTabs();
         }
 
@@ -350,34 +359,15 @@
             const container = $('plantTabs');
             container.innerHTML = '';
             getPlantList().forEach(plant => {
-                const wrapper = document.createElement('div');
-                wrapper.className = "flex items-center gap-1 bg-white p-1 rounded-xl border border-gray-200 shadow-sm";
-
                 const btn = document.createElement('button');
-                btn.type = "button";
-                btn.className = `px-3.5 py-2 rounded-lg text-base font-bold transition ${plant === currentPlant ? 'tab-active' : 'text-gray-700'}`;
+                btn.type = 'button';
+                btn.title = plant;
+                btn.className = `w-full min-w-0 h-12 px-3 rounded-2xl border-2 text-base font-bold truncate transition active:scale-95 ${plant === currentPlant ? 'tab-active' : 'bg-green-50 text-green-800 border-green-200 hover:bg-green-100'}`;
                 btn.innerText = plant;
                 btn.onclick = async () => { currentPlant = plant; await renderDashboard(); };
-                wrapper.appendChild(btn);
-
-                if (isManageMode) {
-                    const editBtn = document.createElement('button');
-                    editBtn.type = "button";
-                    editBtn.innerText = "✏️";
-                    editBtn.className = "text-base p-2.5 hover:bg-gray-100 rounded";
-                    editBtn.onclick = (e) => { e.stopPropagation(); editPlantName(plant); };
-
-                    const delBtn = document.createElement('button');
-                    delBtn.type = "button";
-                    delBtn.innerText = "🗑️";
-                    delBtn.className = "text-base p-2.5 hover:bg-gray-100 rounded";
-                    delBtn.onclick = (e) => { e.stopPropagation(); deletePlant(plant); };
-
-                    wrapper.appendChild(editBtn);
-                    wrapper.appendChild(delBtn);
-                }
-                container.appendChild(wrapper);
+                container.appendChild(btn);
             });
+            $('manageTarget').innerText = currentPlant;
         }
 
         async function editPlantName(oldName) {
