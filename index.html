@@ -421,21 +421,20 @@
                 return;
             }
 
+            const chip = (t, cls) => `<span class="whitespace-nowrap text-sm px-3 py-1 rounded-full font-bold ${cls}">${esc(t)}</span>`;
             timeline.innerHTML = [...records].reverse().map(rec => `
-                <div class="flex gap-4 p-4 border-2 border-green-100 rounded-2xl bg-green-50/50 items-center">
-                    <img src="${rec.photo}" class="w-24 h-24 object-cover rounded-xl shadow cursor-pointer flex-shrink-0" onclick="showImageZoom(this.src)">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="font-bold text-green-800 text-base">${esc(rec.date)}</span>
-                            <span class="bg-green-200 text-green-900 text-xs px-2.5 py-1 rounded-full font-bold">${esc((rec.stages || []).join(', '))}</span>
-                        </div>
-                        <p class="text-base text-gray-800 font-bold mb-1 truncate">💬 "${esc(rec.note || '오늘도 무럭무럭 자라라!')}"</p>
-                        <p class="text-sm text-gray-600">🔍 ${esc(rec.leafColor)} | ${esc(rec.soil)} | ${esc(rec.bugState)}</p>
-                        <p class="text-sm text-green-700 mt-0.5">👐 ${esc((rec.actions || []).join(', '))}</p>
-                        <div class="flex gap-2 mt-2">
-                            <button type="button" onclick="openRecordModal(${Number(rec.id)})" class="text-sm bg-white border border-green-300 text-green-700 px-3.5 py-2.5 rounded-lg font-bold hover:bg-green-50">✏️ 수정</button>
-                            <button type="button" onclick="deleteRecordById(${Number(rec.id)})" class="text-sm bg-white border border-red-200 text-red-500 px-3.5 py-2.5 rounded-lg font-bold hover:bg-red-50">🗑️ 삭제</button>
-                        </div>
+                <div class="border-2 border-green-100 rounded-2xl bg-green-50/50 p-3 space-y-3">
+                    <img src="${rec.photo}" class="w-full h-52 sm:h-72 object-cover rounded-xl shadow cursor-pointer" onclick="showImageZoom(this.src)">
+                    <div class="space-y-2">
+                        <span class="block font-bold text-green-800 text-lg whitespace-nowrap">${esc(rec.date)}</span>
+                        <div class="flex flex-wrap gap-1.5">${(rec.stages || []).map(t => chip(t, 'bg-green-200 text-green-900')).join('')}</div>
+                    </div>
+                    <p class="text-lg text-gray-800 font-bold break-words">💬 "${esc(rec.note || '오늘도 무럭무럭 자라라!')}"</p>
+                    <div class="flex flex-wrap gap-1.5">${[rec.leafColor, rec.leafSize, rec.soil, rec.bugState].filter(Boolean).map(t => chip(t, 'bg-white border border-green-200 text-gray-700')).join('')}</div>
+                    <div class="flex flex-wrap items-center gap-1.5"><span>👐</span>${(rec.actions || []).map(t => chip(t, 'bg-green-100 text-green-800')).join('')}</div>
+                    <div class="flex justify-end gap-2 pt-1">
+                        <button type="button" onclick="openRecordModal(${Number(rec.id)})" class="text-sm bg-white border border-green-300 text-green-700 px-4 py-2.5 rounded-xl font-bold hover:bg-green-50">✏️ 수정</button>
+                        <button type="button" onclick="deleteRecordById(${Number(rec.id)})" class="text-sm bg-white border border-red-200 text-red-500 px-4 py-2.5 rounded-xl font-bold hover:bg-red-50">🗑️ 삭제</button>
                     </div>
                 </div>`).join('');
         }
