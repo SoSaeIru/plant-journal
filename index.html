@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>새로이의 식물 관찰 일기</title>
+    <title>식물 관찰 일기</title>
 
     <!-- PWA 및 아이패드 홈 화면 아이콘 설정 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="새로이 식물일기">
+    <meta name="apple-mobile-web-app-title" content="식물일기">
     <link rel="apple-touch-icon" href="https://img.icons8.com/emoji/192/potted-plant-emoji.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -26,8 +26,9 @@
 <body class="p-4 max-w-2xl mx-auto text-gray-800 pb-20">
 
     <header class="text-center my-6">
-        <h1 class="text-4xl text-green-600 drop-shadow-sm">🌿 새로이의 초록 정원 🍅</h1>
+        <h1 id="appTitle" class="text-4xl text-green-600 drop-shadow-sm">🌿 초록 정원 🌱</h1>
         <p class="text-gray-600 mt-1 text-base">내가 직접 키우고 관찰하는 세상에 하나뿐인 일기장</p>
+        <button type="button" id="profileBtn" onclick="openProfileModal()" class="mt-3 bg-white border-2 border-green-200 text-green-800 px-5 py-2.5 rounded-full text-base font-bold shadow-sm"></button>
     </header>
 
     <!-- 식물 탭 (백업/복원은 ⚙️ 관리 모드에서만 보임) -->
@@ -44,8 +45,13 @@
         <div id="managePanel" class="hidden mt-3 p-3 rounded-2xl bg-gray-50 border border-gray-200 space-y-2">
             <p class="text-sm text-gray-600">선택한 식물: <span id="manageTarget" class="font-bold text-green-700"></span></p>
             <div class="grid grid-cols-2 gap-2">
-                <button type="button" onclick="editPlantName(currentPlant)" class="whitespace-nowrap bg-white text-gray-700 py-2.5 rounded-xl text-base font-bold border border-gray-300">✏️ 이름 바꾸기</button>
-                <button type="button" onclick="deletePlant(currentPlant)" class="whitespace-nowrap bg-white text-red-500 py-2.5 rounded-xl text-base font-bold border border-red-200">🗑️ 식물 삭제</button>
+                <button type="button" onclick="editPlantName(currentPlantId)" class="whitespace-nowrap bg-white text-gray-700 py-2.5 rounded-xl text-base font-bold border border-gray-300">✏️ 식물 이름</button>
+                <button type="button" onclick="deletePlant(currentPlantId)" class="whitespace-nowrap bg-white text-red-500 py-2.5 rounded-xl text-base font-bold border border-red-200">🗑️ 식물 삭제</button>
+            </div>
+            <button type="button" id="placeBtn" onclick="togglePlace()" class="w-full whitespace-nowrap bg-white text-gray-700 py-2.5 rounded-xl text-base font-bold border border-gray-300"></button>
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="renameProfile()" class="whitespace-nowrap bg-white text-gray-700 py-2.5 rounded-xl text-base font-bold border border-gray-300">👤 내 이름</button>
+                <button type="button" onclick="deleteProfile()" class="whitespace-nowrap bg-white text-red-500 py-2.5 rounded-xl text-base font-bold border border-red-200">🗑️ 프로필 삭제</button>
             </div>
             <div class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200">
                 <button type="button" onclick="exportData()" class="whitespace-nowrap bg-blue-50 text-blue-600 py-2.5 rounded-xl text-base font-bold border border-blue-200">📤 백업</button>
@@ -90,7 +96,7 @@
 
             <div>
                 <label class="block text-base font-bold text-green-700 mb-1">0. 어떤 식물인가요? 🌱</label>
-                <select id="recordPlantSelect" class="w-full p-3.5 border-2 border-green-300 rounded-xl bg-green-50 text-lg font-bold text-green-900"></select>
+                <select id="recordPlantSelect" onchange="onRecordPlantChange()" class="w-full p-3.5 border-2 border-green-300 rounded-xl bg-green-50 text-lg font-bold text-green-900"></select>
             </div>
 
             <div>
@@ -116,7 +122,8 @@
                     <div><span class="text-sm font-bold text-gray-600">🍃 잎 색깔</span><select id="leafColor" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
                     <div><span class="text-sm font-bold text-gray-600">📏 잎의 크기·양</span><select id="leafSize" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
                     <div><span class="text-sm font-bold text-gray-600">💧 흙 상태</span><select id="soilState" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
-                    <div><span class="text-sm font-bold text-gray-600">🐛 비밀 관찰</span><select id="bugState" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
+                    <div><span class="text-sm font-bold text-gray-600">🔍 잎 위에 뭐가 있어요?</span><select id="bugState" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
+                    <div id="weatherWrap" class="hidden"><span class="text-sm font-bold text-gray-600">🌤️ 오늘 날씨는?</span><select id="weather" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
                 </div>
             </div>
 
@@ -143,11 +150,31 @@
         </div>
     </div>
 
+    <!-- 프로필 선택/만들기 모달 -->
+    <div id="profileModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto space-y-4">
+            <h2 id="profileModalTitle" class="text-xl text-green-700 font-bold text-center">👤 누가 쓸까요?</h2>
+            <div id="profileListBox"><div id="profileList" class="grid grid-cols-2 gap-2"></div></div>
+            <div class="space-y-3">
+                <p id="profileCreateTitle" class="text-base font-bold text-gray-700 pt-3 border-t">새 친구 만들기</p>
+                <input type="text" id="profileNameInput" maxlength="6" placeholder="이름을 써요" class="w-full p-3.5 border-2 border-gray-200 rounded-xl text-base font-bold">
+                <div id="iconPicker" class="grid grid-cols-4 gap-2"></div>
+                <button type="button" onclick="createProfile()" class="w-full bg-green-500 text-white py-3 rounded-xl font-bold text-lg hover:bg-green-600">만들기 🌱</button>
+            </div>
+            <button type="button" id="profileCloseBtn" onclick="closeProfileModal()" class="w-full bg-gray-200 text-gray-700 py-3 rounded-xl font-bold text-base">닫기</button>
+        </div>
+    </div>
+
     <!-- 새 식물 추가 모달 -->
     <div id="newPlantModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl">
             <h2 class="text-xl text-green-700 font-bold mb-3 text-center">🌱 새로운 식물 등록</h2>
             <input type="text" id="newPlantName" placeholder="식물 이름 (예: 바질 🌿)" class="w-full p-3.5 border-2 border-gray-200 rounded-xl mb-4 text-base font-bold">
+            <p class="text-base font-bold text-gray-700 mb-1">어디서 자라요?</p>
+            <div class="grid grid-cols-2 gap-2 mb-4" id="placePicker">
+                <button type="button" data-place="in" onclick="pickPlace('in')" class="place-btn p-3 border-2 border-gray-200 rounded-xl text-base font-bold">🏠 집 안</button>
+                <button type="button" data-place="out" onclick="pickPlace('out')" class="place-btn p-3 border-2 border-gray-200 rounded-xl text-base font-bold">🌳 집 밖</button>
+            </div>
             <div class="flex gap-3">
                 <button type="button" onclick="closeNewPlantModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold text-base">취소</button>
                 <button type="button" onclick="addNewPlant()" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold text-base">등록하기</button>
@@ -164,7 +191,8 @@
     </div>
 
     <script>
-        const DB_NAME = 'PlantJournalDB', STORE_NAME = 'records', META_STORE = 'meta';
+        const DB_NAME = 'PlantJournalDB', STORE_NAME = 'records', META_STORE = 'meta', PLANT_STORE = 'plants', PROFILE_STORE = 'profiles';
+        const PLACE_LABEL = { in: '🏠 집 안', out: '🌳 집 밖' };
         const DEFAULT_PLANT = "방울토마토 🍅";
         const STAGES = ['💤 잠자고 있어요', '🌱 새싹이 쏙!', '🌿 잎이 쑥쑥!', '📏 키가 쑥 컸어요', '🌸 예쁜 꽃이 펴요', '🍅 열매가 열렸어요', '🤒 아파요', '🍂 잎이 시들어요'];
         const ACTIONS = ['💧 물 주기', '☀️ 햇빛 쬐어주기', '🧹 잎 닦아주기', '💊 영양제 주기', '❤️ "사랑해" 말하기'];
@@ -172,12 +200,17 @@
             leafColor: ['🟢 싱싱한 초록', '🟡 연두/노랑', '🎨 얼룩달룩', '🟤 시든 갈색'],
             leafSize: ['🌱 잎이 늘어남', '✋ 손바닥만함', '🙂 어제와 비슷'],
             soilState: ['💧 촉촉해요', '🙂 보통이에요', '☀️ 바짝 말랐어요'],
-            bugState: ['✨ 깨끗해요', '🐛 벌레 발견!', '💧 이슬이 맺힘']
+            weather: ['🌞 맑아요', '☁️ 흐려요', '🌧️ 비가 와요']
         };
 
+        const BUG_OPTIONS = [{ t: '✨ 아무것도 없어요' }, { t: '🐛 벌레가 있어요' }, { t: '🦋 나비나 벌이 왔어요', outOnly: true }, { t: '💧 물방울이 있어요' }];
+        const PROFILE_ICONS = ['🌱', '🌻', '🐰', '🐻', '🦊', '🐼', '🐥', '🚀'];
+        let newProfileIcon = PROFILE_ICONS[0];
         let db = null;
-        let plantCache = [DEFAULT_PLANT];
-        let currentPlant = DEFAULT_PLANT;
+        let profile = null;
+        let plants = [];
+        let currentPlantId = null;
+        let newPlantPlace = 'in';
         let isManageMode = false;
         let capturedImage = null;
         let editingRecordId = null;
@@ -213,7 +246,7 @@
         // ---------- IndexedDB ----------
         function initDB() {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, 2);
+                const request = indexedDB.open(DB_NAME, 3);
                 request.onerror = (e) => reject(e.target.error);
                 request.onsuccess = (e) => {
                     db = e.target.result;
@@ -224,6 +257,8 @@
                     const d = e.target.result;
                     if (!d.objectStoreNames.contains(STORE_NAME)) d.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
                     if (!d.objectStoreNames.contains(META_STORE)) d.createObjectStore(META_STORE);
+                    if (!d.objectStoreNames.contains(PLANT_STORE)) d.createObjectStore(PLANT_STORE, { keyPath: 'id' });
+                    if (!d.objectStoreNames.contains(PROFILE_STORE)) d.createObjectStore(PROFILE_STORE, { keyPath: 'id' });
                 };
             });
         }
@@ -264,53 +299,189 @@
             }
         }
 
-        async function deleteRecordsByPlant(plantName) {
+        async function deleteRecordsByPlant(plantId) {
             const records = await getAllRecords();
             const t = db.transaction(STORE_NAME, 'readwrite');
             const store = t.objectStore(STORE_NAME);
-            records.forEach(rec => { if (rec.plantName === plantName) store.delete(rec.id); });
+            records.forEach(r => { if (r.plantId === plantId) store.delete(r.id); });
             await done(t);
         }
 
-        async function renamePlantInDB(oldName, newName) {
+        // ---------- 프로필 / 식물 (스키마 v3) ----------
+        const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        const metaGet = (key) => req(db.transaction(META_STORE).objectStore(META_STORE).get(key));
+        const curPlant = () => plants.find(p => p.id === currentPlantId);
+
+        async function savePlant(plant) {
+            const t = db.transaction(PLANT_STORE, 'readwrite');
+            t.objectStore(PLANT_STORE).put(plant);
+            await done(t);
+        }
+
+        // v2(식물 이름 목록 + plantName 기록) → v3(프로필/식물 고유번호) 한 번만 변환
+        async function migrateIfNeeded() {
+            if (await metaGet('schema') === 3) return;
             const records = await getAllRecords();
-            const t = db.transaction(STORE_NAME, 'readwrite');
-            const store = t.objectStore(STORE_NAME);
-            records.forEach(rec => {
-                if (rec.plantName === oldName) { rec.plantName = newName; store.put(rec); }
-            });
-            await done(t);
-        }
-
-        // ---------- 식물 목록 (IndexedDB 저장 + localStorage 보조 사본) ----------
-        const getPlantList = () => plantCache;
-
-        async function savePlantList(list) {
-            plantCache = list;
-            try { localStorage.setItem('plant_list', JSON.stringify(list)); } catch (e) {}
-            try {
-                const t = db.transaction(META_STORE, 'readwrite');
-                t.objectStore(META_STORE).put(list, 'plant_list');
-                await done(t);
-            } catch (e) { console.error('식물 목록 저장 실패', e); }
-        }
-
-        // 기록에는 있는데 목록에 없는 식물(목록만 유실된 경우)을 자동 복구
-        async function syncPlants() {
-            const names = [...new Set((await getAllRecords()).map(r => r.plantName).filter(Boolean))];
-            const missing = names.filter(n => !plantCache.includes(n));
-            if (missing.length) await savePlantList([...plantCache, ...missing]);
-        }
-
-        async function loadPlantList() {
-            let list = null;
-            try { list = await req(db.transaction(META_STORE).objectStore(META_STORE).get('plant_list')); } catch (e) {}
-            if (!Array.isArray(list) || !list.length) {
-                try { list = JSON.parse(localStorage.getItem('plant_list')); } catch (e) {}
+            let list = await metaGet('plant_list');
+            if (!Array.isArray(list) || !list.length) { try { list = JSON.parse(localStorage.getItem('plant_list')); } catch (e) {} }
+            list = Array.isArray(list) ? list : [];
+            const hadData = records.length > 0 || list.length > 0;
+            if (!hadData) {
+                const t0 = db.transaction(META_STORE, 'readwrite');
+                t0.objectStore(META_STORE).put(3, 'schema');
+                await done(t0);
+                return;
             }
-            plantCache = (Array.isArray(list) && list.length) ? list : [DEFAULT_PLANT];
-            await savePlantList(plantCache);
-            await syncPlants();
+            const names = [...new Set([...list, ...records.map(r => r.plantName)].filter(Boolean))];
+            if (!names.length) names.push(DEFAULT_PLANT);
+            const prof = { id: uid(), name: hadData ? '새로이' : '나', icon: '🌱' };
+            const ids = {};
+            const now = Date.now();
+            const t = db.transaction([STORE_NAME, PLANT_STORE, PROFILE_STORE, META_STORE], 'readwrite');
+            t.objectStore(PROFILE_STORE).put(prof);
+            names.forEach((name, i) => {
+                ids[name] = uid();
+                t.objectStore(PLANT_STORE).put({ id: ids[name], profileId: prof.id, name, place: 'in', createdAt: now + i });
+            });
+            records.forEach(r => {
+                r.profileId = prof.id;
+                r.plantId = ids[r.plantName];
+                delete r.plantName;
+                t.objectStore(STORE_NAME).put(r);
+            });
+            t.objectStore(META_STORE).put(prof.id, 'currentProfileId');
+            t.objectStore(META_STORE).put(3, 'schema');
+            await done(t);
+        }
+
+        const getProfiles = () => req(db.transaction(PROFILE_STORE).objectStore(PROFILE_STORE).getAll());
+
+        async function loadState() {
+            await migrateIfNeeded();
+            const profiles = await getProfiles();
+            const wantedId = await metaGet('currentProfileId');
+            profile = profiles.find(p => p.id === wantedId) || profiles[0] || null;
+            await loadPlants();
+        }
+
+        async function loadPlants() {
+            if (!profile) { plants = []; currentPlantId = null; return; }
+            const all = await req(db.transaction(PLANT_STORE).objectStore(PLANT_STORE).getAll());
+            plants = all.filter(p => p.profileId === profile.id).sort((a, b) => a.createdAt - b.createdAt);
+            if (!plants.some(p => p.id === currentPlantId)) currentPlantId = plants.length ? plants[0].id : null;
+        }
+
+        function renderHeader() {
+            $('appTitle').innerText = profile ? `🌿 ${profile.name}의 초록 정원 ${profile.icon || '🌱'}` : '🌿 초록 정원 🌱';
+            $('profileBtn').innerText = profile ? `${profile.icon || '🌱'} ${profile.name} ▾` : '';
+            $('profileBtn').classList.toggle('hidden', !profile);
+        }
+
+        function pickIcon(icon) {
+            newProfileIcon = icon;
+            document.querySelectorAll('#iconPicker button').forEach(b => b.classList.toggle('stage-selected', b.textContent === icon));
+        }
+
+        async function openProfileModal(first = false) {
+            $('profileModalTitle').innerText = first ? '🌱 이름이 뭐예요?' : '👤 누가 쓸까요?';
+            $('profileListBox').classList.toggle('hidden', first);
+            $('profileCreateTitle').classList.toggle('hidden', first);
+            $('profileCloseBtn').classList.toggle('hidden', first);
+            $('profileNameInput').value = '';
+            pickIcon(PROFILE_ICONS[0]);
+            if (!first) await renderProfileList();
+            $('profileModal').classList.remove('hidden');
+        }
+
+        function closeProfileModal() { $('profileModal').classList.add('hidden'); }
+
+        async function renderProfileList() {
+            const list = (await getProfiles()).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            const box = $('profileList');
+            box.innerHTML = '';
+            list.forEach(p => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = `w-full min-w-0 p-4 rounded-2xl border-2 text-lg font-bold truncate ${profile && p.id === profile.id ? 'tab-active' : 'bg-green-50 text-green-800 border-green-200'}`;
+                b.textContent = `${p.icon || '🌱'} ${p.name}`;
+                b.onclick = () => selectProfile(p.id);
+                box.appendChild(b);
+            });
+        }
+
+        async function selectProfile(id) {
+            try {
+                const p = (await getProfiles()).find(x => x.id === id);
+                if (!p) return;
+                const t = db.transaction(META_STORE, 'readwrite');
+                t.objectStore(META_STORE).put(id, 'currentProfileId');
+                await done(t);
+                profile = p;
+                currentPlantId = null;
+                await loadPlants();
+                closeProfileModal();
+                await renderDashboard();
+            } catch (e) { alert('바꾸지 못했어요. 다시 해 주세요.'); }
+        }
+
+        async function createProfile() {
+            const name = $('profileNameInput').value.trim();
+            if (!name) return alert('이름을 써 주세요!');
+            if ((await getProfiles()).some(p => p.name === name)) return alert('이미 있는 이름이에요!');
+            const p = { id: uid(), name, icon: newProfileIcon, createdAt: Date.now() };
+            try {
+                const t = db.transaction([PROFILE_STORE, META_STORE], 'readwrite');
+                t.objectStore(PROFILE_STORE).put(p);
+                t.objectStore(META_STORE).put(p.id, 'currentProfileId');
+                await done(t);
+                profile = p;
+                currentPlantId = null;
+                await loadPlants();
+                closeProfileModal();
+                await renderDashboard();
+                openNewPlantModal();
+            } catch (e) { alert('만들지 못했어요. 다시 해 주세요.'); }
+        }
+
+        async function renameProfile() {
+            if (!profile) return;
+            const input = prompt('이름을 바꿔 주세요:', profile.name);
+            if (input === null) return;
+            const name = input.trim().slice(0, 6);
+            if (!name || name === profile.name) return;
+            if ((await getProfiles()).some(p => p.id !== profile.id && p.name === name)) return alert('이미 있는 이름이에요!');
+            try {
+                const next = { ...profile, name };
+                const t = db.transaction(PROFILE_STORE, 'readwrite');
+                t.objectStore(PROFILE_STORE).put(next);
+                await done(t);
+                profile = next;
+                renderHeader();
+            } catch (e) { alert('이름을 바꾸지 못했어요.'); }
+        }
+
+        async function deleteProfile() {
+            if (!profile) return;
+            const all = await getProfiles();
+            if (all.length <= 1) return alert('최소 한 명은 남아있어야 해요!');
+            const typed = prompt(`'${profile.name}' 프로필과 식물·기록이 모두 사라져요.\n지우려면 이름을 똑같이 써 주세요:`);
+            if (typed === null || typed.trim() !== profile.name) return;
+            try {
+                const pid = profile.id;
+                const recs = await getAllRecords();
+                const pls = await req(db.transaction(PLANT_STORE).objectStore(PLANT_STORE).getAll());
+                const next = all.find(p => p.id !== pid);
+                const t = db.transaction([STORE_NAME, PLANT_STORE, PROFILE_STORE, META_STORE], 'readwrite');
+                recs.forEach(r => { if (r.profileId === pid) t.objectStore(STORE_NAME).delete(r.id); });
+                pls.forEach(x => { if (x.profileId === pid) t.objectStore(PLANT_STORE).delete(x.id); });
+                t.objectStore(PROFILE_STORE).delete(pid);
+                t.objectStore(META_STORE).put(next.id, 'currentProfileId');
+                await done(t);
+                profile = next;
+                currentPlantId = null;
+                await loadPlants();
+                await renderDashboard();
+            } catch (e) { alert('삭제하지 못했어요. 다시 해 주세요.'); }
         }
 
         // ---------- 초기화 ----------
@@ -332,6 +503,40 @@
                 $('actionSelector').appendChild(b);
             });
             Object.entries(OPTIONS).forEach(([id, list]) => list.forEach(t => $(id).add(new Option(t))));
+            PROFILE_ICONS.forEach(icon => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'p-2 border-2 border-gray-200 rounded-xl text-3xl';
+                b.textContent = icon;
+                b.onclick = () => pickIcon(icon);
+                $('iconPicker').appendChild(b);
+            });
+        }
+
+        function selectedPlace() {
+            const p = plants.find(x => x.id === $('recordPlantSelect').value);
+            return p && p.place === 'out' ? 'out' : 'in';
+        }
+
+        function fillBugOptions(place) {
+            const sel = $('bugState');
+            const keep = sel.value;
+            sel.innerHTML = '';
+            BUG_OPTIONS.filter(o => place === 'out' || !o.outOnly).forEach(o => sel.add(new Option(o.t)));
+            if (keep && [...sel.options].some(o => o.value === keep)) sel.value = keep;
+        }
+
+        function onRecordPlantChange() {
+            fillBugOptions(selectedPlace());
+            updateObservationFields();
+        }
+
+        // 예전 기록의 값이 현재 선택지에 없어도 잃지 않도록 임시 선택지로 추가
+        function setSelect(id, value) {
+            if (!value) return;
+            const sel = $(id);
+            if (![...sel.options].some(o => o.value === value)) sel.add(new Option(value));
+            sel.value = value;
         }
 
         function isDormant() {
@@ -356,6 +561,7 @@
         function updateObservationFields() {
             const dormant = isDormant();
             ['leafColor', 'leafSize', 'bugState'].forEach(id => $(id).parentElement.classList.toggle('hidden', dormant));
+            $('weatherWrap').classList.toggle('hidden', dormant || selectedPlace() !== 'out');
             $('dormantHint').classList.toggle('hidden', !dormant);
         }
 
@@ -364,9 +570,9 @@
             try {
                 if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
                 await initDB();
-                await loadPlantList();
-                if (!plantCache.includes(currentPlant)) currentPlant = plantCache[0];
+                await loadState();
                 await renderDashboard();
+                if (!profile) await openProfileModal(true);
             } catch (err) {
                 console.error('앱 초기화 오류:', err);
                 alert('저장소를 열 수 없어요. 사파리 비공개 모드이거나 저장 공간이 부족할 수 있어요.');
@@ -384,56 +590,64 @@
         function renderTabs() {
             const container = $('plantTabs');
             container.innerHTML = '';
-            getPlantList().forEach(plant => {
+            plants.forEach(plant => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.title = plant;
-                btn.className = `w-full min-w-0 h-12 px-3 rounded-2xl border-2 text-base font-bold truncate transition active:scale-95 ${plant === currentPlant ? 'tab-active' : 'bg-green-50 text-green-800 border-green-200 hover:bg-green-100'}`;
-                btn.innerText = plant;
-                btn.onclick = async () => { currentPlant = plant; await renderDashboard(); };
+                btn.title = plant.name;
+                btn.className = `w-full min-w-0 h-12 px-3 rounded-2xl border-2 text-base font-bold truncate transition active:scale-95 ${plant.id === currentPlantId ? 'tab-active' : 'bg-green-50 text-green-800 border-green-200 hover:bg-green-100'}`;
+                btn.innerText = plant.name;
+                btn.onclick = async () => { currentPlantId = plant.id; await renderDashboard(); };
                 container.appendChild(btn);
             });
-            $('manageTarget').innerText = currentPlant;
+            const cur = curPlant();
+            $('manageTarget').innerText = cur ? cur.name : '';
+            $('placeBtn').innerText = cur ? `📍 장소 바꾸기 (지금: ${PLACE_LABEL[cur.place === 'out' ? 'out' : 'in']})` : '';
         }
 
-        async function editPlantName(oldName) {
-            const input = prompt('식물 이름을 수정해 주세요:', oldName);
+        async function editPlantName(plantId) {
+            const plant = plants.find(p => p.id === plantId);
+            if (!plant) return;
+            const input = prompt('식물 이름을 수정해 주세요:', plant.name);
             if (input === null) return;
-            const newName = input.trim();
-            if (!newName || newName === oldName) return;
-            const plants = [...getPlantList()];
-            if (plants.includes(newName)) return alert('이미 있는 이름이에요!');
-            const idx = plants.indexOf(oldName);
-            if (idx === -1) return;
+            const name = input.trim();
+            if (!name || name === plant.name) return;
+            if (plants.some(p => p.name === name)) return alert('이미 있는 이름이에요!');
             try {
-                await renamePlantInDB(oldName, newName);
-                plants[idx] = newName;
-                await savePlantList(plants);
-                if (currentPlant === oldName) currentPlant = newName;
+                await savePlant({ ...plant, name });
+                await loadPlants();
                 await renderDashboard();
-            } catch (e) {
-                alert('이름을 바꾸지 못했어요.');
-            }
+            } catch (e) { alert('이름을 바꾸지 못했어요.'); }
         }
 
-        async function deletePlant(plantName) {
-            const plants = getPlantList();
-            if (plants.length <= 1) return alert('최소 하나의 식물은 남아있어야 해요!');
-            if (!confirm(`'${plantName}' 식물을 삭제할까요? 기록도 함께 사라져요.`)) return;
+        async function togglePlace() {
+            const plant = curPlant();
+            if (!plant) return;
             try {
-                await deleteRecordsByPlant(plantName);
-                await savePlantList(plants.filter(p => p !== plantName));
-                currentPlant = getPlantList()[0];
+                await savePlant({ ...plant, place: plant.place === 'out' ? 'in' : 'out' });
+                await loadPlants();
                 await renderDashboard();
-            } catch (e) {
-                alert('삭제하지 못했어요. 다시 해 주세요.');
-            }
+            } catch (e) { alert('장소를 바꾸지 못했어요.'); }
+        }
+
+        async function deletePlant(plantId) {
+            const plant = plants.find(p => p.id === plantId);
+            if (!plant) return;
+            if (!confirm(`'${plant.name}' 식물을 삭제할까요? 기록도 함께 사라져요.`)) return;
+            try {
+                await deleteRecordsByPlant(plantId);
+                const t = db.transaction(PLANT_STORE, 'readwrite');
+                t.objectStore(PLANT_STORE).delete(plantId);
+                await done(t);
+                await loadPlants();
+                await renderDashboard();
+            } catch (e) { alert('삭제하지 못했어요. 다시 해 주세요.'); }
         }
 
         // ---------- 화면 그리기 ----------
         async function renderDashboard() {
+            renderHeader();
             renderTabs();
-            const records = (await getAllRecords()).filter(r => r.plantName === currentPlant).sort((a, b) => a.id - b.id);
+            const records = (await getAllRecords()).filter(r => r.plantId === currentPlantId).sort((a, b) => a.id - b.id);
 
             const setBox = (box, rec) => {
                 box.innerHTML = rec ? `<img src="${rec.photo}" class="w-full h-full object-cover rounded-lg">` : "사진 없음";
@@ -443,7 +657,7 @@
 
             const timeline = $('timelineList');
             if (records.length === 0) {
-                timeline.innerHTML = `<p class="text-center text-gray-400 py-8 text-base">아직 관찰 기록이 없어요.<br>첫 관찰 기록을 남겨보세요! 📷</p>`;
+                timeline.innerHTML = `<p class="text-center text-gray-400 py-8 text-base">${plants.length ? '아직 관찰 기록이 없어요.<br>첫 관찰 기록을 남겨보세요! 📷' : '아직 식물이 없어요.<br>+ 새 식물을 눌러 첫 식물을 심어 보세요! 🌱'}</p>`;
                 return;
             }
 
@@ -456,7 +670,7 @@
                         <div class="flex flex-wrap gap-1.5">${(rec.stages || []).map(t => chip(t, 'bg-green-200 text-green-900')).join('')}</div>
                     </div>
                     <p class="text-lg text-gray-800 font-bold break-words">💬 "${esc(rec.note || '오늘도 무럭무럭 자라라!')}"</p>
-                    <div class="flex flex-wrap gap-1.5">${((rec.stages || []).includes(STAGES[0]) ? [rec.soil] : [rec.leafColor, rec.leafSize, rec.soil, rec.bugState]).filter(Boolean).map(t => chip(t, 'bg-white border border-green-200 text-gray-700')).join('')}</div>
+                    <div class="flex flex-wrap gap-1.5">${((rec.stages || []).includes(STAGES[0]) ? [rec.soil] : [rec.weather, rec.leafColor, rec.leafSize, rec.soil, rec.bugState]).filter(Boolean).map(t => chip(t, 'bg-white border border-green-200 text-gray-700')).join('')}</div>
                     <div class="flex flex-wrap items-center gap-1.5"><span>👐</span>${(rec.actions || []).map(t => chip(t, 'bg-green-100 text-green-800')).join('')}</div>
                     <div class="flex justify-end gap-2 pt-1">
                         <button type="button" onclick="openRecordModal(${Number(rec.id)})" class="text-sm bg-white border border-green-300 text-green-700 px-4 py-2.5 rounded-xl font-bold hover:bg-green-50">✏️ 수정</button>
@@ -467,6 +681,7 @@
 
         // ---------- 기록 작성 / 수정 ----------
         async function openRecordModal(recordId = null) {
+            if (!plants.length) { openNewPlantModal(); return; }
             editingRecordId = recordId;
             editingDate = null;
             capturedImage = null;
@@ -480,11 +695,11 @@
 
             const select = $('recordPlantSelect');
             select.innerHTML = '';
-            getPlantList().forEach(plant => {
+            plants.forEach(plant => {
                 const opt = document.createElement('option');
-                opt.value = plant;
-                opt.innerText = plant;
-                if (plant === currentPlant) opt.selected = true;
+                opt.value = plant.id;
+                opt.innerText = plant.name;
+                if (plant.id === currentPlantId) opt.selected = true;
                 select.appendChild(opt);
             });
 
@@ -497,21 +712,24 @@
             if (rec) {
                 $('modalTitle').innerText = "📝 관찰 카드 수정하기";
                 editingDate = rec.date;
-                select.value = rec.plantName;
+                select.value = rec.plantId;
                 capturedImage = rec.photo;
                 $('photoPreviewBox').innerHTML = `<img src="${capturedImage}" class="w-full h-full object-cover rounded-2xl">`;
                 $('voiceNoteInput').value = rec.note || '';
                 checkInputText();
                 document.querySelectorAll('.stage-btn').forEach(b => { if ((rec.stages || []).includes(b.textContent)) b.classList.add('stage-selected'); });
                 document.querySelectorAll('.action-btn').forEach(b => { if ((rec.actions || []).includes(b.textContent)) b.classList.add('action-selected'); });
-                if (rec.leafColor) $('leafColor').value = rec.leafColor;
-                if (rec.leafSize) $('leafSize').value = rec.leafSize;
-                if (rec.soil) $('soilState').value = rec.soil;
-                if (rec.bugState) $('bugState').value = rec.bugState;
+                fillBugOptions(selectedPlace());
+                setSelect('leafColor', rec.leafColor);
+                setSelect('leafSize', rec.leafSize);
+                setSelect('soilState', rec.soil);
+                setSelect('bugState', rec.bugState);
+                setSelect('weather', rec.weather);
             } else {
                 $('modalTitle').innerText = "📝 오늘의 관찰 카드 쓰기";
                 $('photoPreviewBox').innerHTML = `<span class="text-4xl mb-1">📷</span><span class="text-base font-bold">터치해서 사진 선택하기!</span>`;
             }
+            if (!rec) { fillBugOptions(selectedPlace()); $('bugState').selectedIndex = 0; }
             updateObservationFields();
             $('recordModal').classList.remove('hidden');
             $('recordModalBody').scrollTop = 0;
@@ -523,18 +741,27 @@
             $('recordModal').classList.add('hidden');
         }
 
-        function openNewPlantModal() { $('newPlantModal').classList.remove('hidden'); }
+        function openNewPlantModal() { pickPlace('in'); $('newPlantModal').classList.remove('hidden'); }
         function closeNewPlantModal() { $('newPlantModal').classList.add('hidden'); }
+
+        function pickPlace(place) {
+            newPlantPlace = place;
+            document.querySelectorAll('#placePicker .place-btn').forEach(b => b.classList.toggle('stage-selected', b.dataset.place === place));
+        }
 
         async function addNewPlant() {
             const name = $('newPlantName').value.trim();
             if (!name) return alert('식물 이름을 입력해 주세요!');
-            if (getPlantList().includes(name)) return alert('이미 존재하는 식물이에요!');
-            await savePlantList([...getPlantList(), name]);
-            currentPlant = name;
-            $('newPlantName').value = '';
-            closeNewPlantModal();
-            await renderDashboard();
+            if (plants.some(p => p.name === name)) return alert('이미 존재하는 식물이에요!');
+            const plant = { id: uid(), profileId: profile.id, name, place: newPlantPlace, createdAt: Date.now() };
+            try {
+                await savePlant(plant);
+                await loadPlants();
+                currentPlantId = plant.id;
+                $('newPlantName').value = '';
+                closeNewPlantModal();
+                await renderDashboard();
+            } catch (e) { alert('식물을 등록하지 못했어요.'); }
         }
 
         function previewImage(event) {
@@ -644,7 +871,8 @@
                 const today = new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
 
                 const recordData = {
-                    plantName: $('recordPlantSelect').value,
+                    plantId: $('recordPlantSelect').value,
+                    profileId: profile.id,
                     date: (editingRecordId && editingDate) ? editingDate : today,
                     photo: capturedImage,
                     stages: stages.length > 0 ? stages : ['🌱 무럭무럭 자라는 중'],
@@ -656,11 +884,12 @@
                     recordData.leafColor = $('leafColor').value;
                     recordData.leafSize = $('leafSize').value;
                     recordData.bugState = $('bugState').value;
+                    if (selectedPlace() === 'out') recordData.weather = $('weather').value;
                 }
                 if (editingRecordId) recordData.id = editingRecordId;
 
                 await saveRecordToDB(recordData);
-                currentPlant = recordData.plantName;
+                currentPlantId = recordData.plantId;
                 closeRecordModal();
                 await renderDashboard();
                 if (window.confetti) confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
@@ -677,14 +906,19 @@
         // ---------- 백업 / 복원 ----------
         async function exportData() {
             try {
-                const backupData = { plants: getPlantList(), records: await getAllRecords() };
+                const backupData = {
+                    app: 'plant-diary', version: 2, exportedAt: new Date().toISOString(),
+                    profiles: await req(db.transaction(PROFILE_STORE).objectStore(PROFILE_STORE).getAll()),
+                    plants: await req(db.transaction(PLANT_STORE).objectStore(PLANT_STORE).getAll()),
+                    records: await getAllRecords()
+                };
                 const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
                 const fileName = `plant_journal_backup_${new Date().toISOString().slice(0, 10)}.json`;
 
                 if (navigator.canShare) {
                     const file = new File([blob], fileName, { type: 'application/json' });
                     if (navigator.canShare({ files: [file] })) {
-                        await navigator.share({ title: '새로이 식물일기 백업', files: [file] });
+                        await navigator.share({ title: '식물일기 백업', files: [file] });
                         return;
                     }
                 }
@@ -702,6 +936,34 @@
             }
         }
 
+        // 백업 파일(v2) 또는 예전 형식(식물 이름 목록 + plantName 기록)을 현재 구조로 변환
+        function convertBackup(data) {
+            if (!data || !Array.isArray(data.records)) return null;
+            const okRec = r => r && typeof r.photo === 'string' && r.photo.startsWith('data:image/');
+            const fix = r => ({ ...r, stages: Array.isArray(r.stages) ? r.stages : [], actions: Array.isArray(r.actions) ? r.actions : [] });
+            if (data.version === 2 && Array.isArray(data.profiles) && data.profiles.length && Array.isArray(data.plants)) {
+                const ids = new Set(data.plants.map(p => p.id));
+                return { profiles: data.profiles, plants: data.plants, records: data.records.filter(r => okRec(r) && ids.has(r.plantId)).map(fix) };
+            }
+            if (Array.isArray(data.plants)) {
+                const names = [...new Set([...data.plants.filter(p => typeof p === 'string'), ...data.records.filter(okRec).map(r => r.plantName)].filter(Boolean))];
+                if (!names.length) names.push(DEFAULT_PLANT);
+                const prof = { id: uid(), name: profile ? profile.name : '나', icon: '🌱' };
+                const now = Date.now();
+                const ids = {};
+                const ps = names.map((name, i) => { ids[name] = uid(); return { id: ids[name], profileId: prof.id, name, place: 'in', createdAt: now + i }; });
+                const records = data.records.filter(r => okRec(r) && ids[r.plantName]).map(r => {
+                    const c = fix(r);
+                    c.plantId = ids[r.plantName];
+                    c.profileId = prof.id;
+                    delete c.plantName;
+                    return c;
+                });
+                return { profiles: [prof], plants: ps, records };
+            }
+            return null;
+        }
+
         function importData(event) {
             const file = event.target.files[0];
             event.target.value = '';
@@ -711,26 +973,21 @@
             reader.onload = async (e) => {
                 let data;
                 try { data = JSON.parse(e.target.result); } catch (err) { return alert('올바른 백업 파일이 아니에요.'); }
-                if (!data || !Array.isArray(data.plants) || !Array.isArray(data.records)) return alert('올바른 백업 파일 형식이 아닙니다.');
-
-                const records = data.records.filter(r => r && r.plantName && typeof r.photo === 'string' && r.photo.startsWith('data:image/'));
-                const plants = data.plants.filter(p => typeof p === 'string' && p.trim());
-                if (!confirm(`지금 있는 기록이 모두 지워지고, 백업 파일의 기록 ${records.length}개로 바뀌어요. 계속할까요?`)) return;
-
+                const conv = convertBackup(data);
+                if (!conv) return alert('올바른 백업 파일 형식이 아닙니다.');
+                if (!confirm(`지금 있는 기록이 모두 지워지고, 백업 파일의 기록 ${conv.records.length}개로 바뀌어요. 계속할까요?`)) return;
                 try {
-                    const old = await getAllRecords();
-                    const t = db.transaction(STORE_NAME, 'readwrite');
-                    const store = t.objectStore(STORE_NAME);
-                    old.forEach(r => store.delete(r.id));
-                    records.forEach(r => {
-                        const copy = { ...r, stages: Array.isArray(r.stages) ? r.stages : [], actions: Array.isArray(r.actions) ? r.actions : [] };
-                        delete copy.id;
-                        store.add(copy);
-                    });
+                    const t = db.transaction([STORE_NAME, PLANT_STORE, PROFILE_STORE, META_STORE], 'readwrite');
+                    t.objectStore(STORE_NAME).clear();
+                    t.objectStore(PLANT_STORE).clear();
+                    t.objectStore(PROFILE_STORE).clear();
+                    conv.profiles.forEach(p => t.objectStore(PROFILE_STORE).put(p));
+                    conv.plants.forEach(p => t.objectStore(PLANT_STORE).put(p));
+                    conv.records.forEach(r => { const c = { ...r }; delete c.id; t.objectStore(STORE_NAME).add(c); });
+                    t.objectStore(META_STORE).put(conv.profiles[0].id, 'currentProfileId');
                     await done(t);
-                    await savePlantList(plants.length ? plants : [DEFAULT_PLANT]);
-                    await syncPlants();
-                    currentPlant = getPlantList()[0];
+                    currentPlantId = null;
+                    await loadState();
                     await renderDashboard();
                     alert('데이터가 성공적으로 복원되었습니다! 🎉');
                 } catch (err) {
