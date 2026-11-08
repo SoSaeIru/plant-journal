@@ -53,10 +53,33 @@
                 <button type="button" onclick="renameProfile()" class="whitespace-nowrap bg-white text-gray-700 py-2.5 rounded-xl text-base font-bold border border-gray-300">👤 내 이름</button>
                 <button type="button" onclick="deleteProfile()" class="whitespace-nowrap bg-white text-red-500 py-2.5 rounded-xl text-base font-bold border border-red-200">🗑️ 프로필 삭제</button>
             </div>
-            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200">
-                <button type="button" onclick="exportData()" class="whitespace-nowrap bg-blue-50 text-blue-600 py-2.5 rounded-xl text-base font-bold border border-blue-200">📤 백업</button>
-                <button type="button" onclick="document.getElementById('importFileInput').click()" class="whitespace-nowrap bg-blue-50 text-blue-600 py-2.5 rounded-xl text-base font-bold border border-blue-200">📥 복원</button>
+            <div class="pt-2 border-t border-gray-200 space-y-2">
+                <p class="text-sm text-gray-600">💾 <span id="backupOwner" class="font-bold text-green-700"></span>의 기록 지키기</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="exportData('profile')" class="whitespace-nowrap bg-blue-50 text-blue-600 py-2.5 rounded-xl text-base font-bold border border-blue-200">📤 내 기록 백업</button>
+                    <button type="button" onclick="startImport('add')" class="whitespace-nowrap bg-blue-50 text-blue-600 py-2.5 rounded-xl text-base font-bold border border-blue-200">📥 불러오기</button>
+                </div>
+                <p id="lastBackupText" class="text-xs text-gray-500"></p>
+                <p class="text-xs text-gray-500">불러오기는 새 프로필로 더해져요. 지금 있는 기록은 그대로예요.</p>
+                <details class="rounded-xl border border-gray-200 bg-white px-3 py-2">
+                    <summary class="text-sm font-bold text-gray-600 cursor-pointer">👨‍👩‍👧 모든 프로필 (어른용)</summary>
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <button type="button" onclick="exportData('all')" class="whitespace-nowrap bg-blue-50 text-blue-600 py-2.5 rounded-xl text-base font-bold border border-blue-200">📦 전체 백업</button>
+                        <button type="button" onclick="startImport('replace')" class="whitespace-nowrap bg-white text-red-500 py-2.5 rounded-xl text-base font-bold border border-red-200">⚠️ 전체 바꾸기</button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">전체 바꾸기는 이 기기의 모든 프로필·식물·기록을 지우고 백업 파일 내용으로 바꿔요.</p>
+                </details>
             </div>
+        </div>
+    </div>
+
+    <!-- 백업 알림 -->
+    <div id="backupReminder" class="hidden mb-6 p-4 rounded-2xl bg-amber-50 border-2 border-amber-200 space-y-3">
+        <p class="text-lg font-bold text-amber-800">📦 백업할 때가 됐어요!</p>
+        <p id="backupReminderText" class="text-sm text-amber-700"></p>
+        <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="exportData('profile')" class="whitespace-nowrap bg-amber-400 text-white py-2.5 rounded-xl text-base font-bold shadow">📤 지금 백업</button>
+            <button type="button" onclick="snoozeBackupReminder()" class="whitespace-nowrap bg-white text-amber-700 py-2.5 rounded-xl text-base font-bold border border-amber-200">나중에</button>
         </div>
     </div>
 
@@ -162,6 +185,7 @@
                 <button type="button" onclick="createProfile()" class="w-full bg-green-500 text-white py-3 rounded-xl font-bold text-lg hover:bg-green-600">만들기 🌱</button>
             </div>
             <button type="button" id="profileCloseBtn" onclick="closeProfileModal()" class="w-full bg-gray-200 text-gray-700 py-3 rounded-xl font-bold text-base">닫기</button>
+            <button type="button" id="firstImportBtn" onclick="startImport('add')" class="hidden w-full text-sm text-gray-500 underline py-1">📥 백업 파일이 있어요 (어른용)</button>
         </div>
     </div>
 
@@ -375,6 +399,7 @@
             $('appTitle').innerText = profile ? `🌿 ${profile.name}의 초록 정원 ${profile.icon || '🌱'}` : '🌿 초록 정원 🌱';
             $('profileBtn').innerText = profile ? `${profile.icon || '🌱'} ${profile.name} ▾` : '';
             $('profileBtn').classList.toggle('hidden', !profile);
+            $('backupOwner').innerText = profile ? profile.name : '';
         }
 
         function pickIcon(icon) {
@@ -387,6 +412,7 @@
             $('profileListBox').classList.toggle('hidden', first);
             $('profileCreateTitle').classList.toggle('hidden', first);
             $('profileCloseBtn').classList.toggle('hidden', first);
+            $('firstImportBtn').classList.toggle('hidden', !first);
             $('profileNameInput').value = '';
             pickIcon(PROFILE_ICONS[0]);
             if (!first) await renderProfileList();
@@ -471,7 +497,10 @@
                 const recs = await getAllRecords();
                 const pls = await req(db.transaction(PLANT_STORE).objectStore(PLANT_STORE).getAll());
                 const next = all.find(p => p.id !== pid);
+                const info = await getBackupInfo();
+                delete info[pid];
                 const t = db.transaction([STORE_NAME, PLANT_STORE, PROFILE_STORE, META_STORE], 'readwrite');
+                t.objectStore(META_STORE).put(info, 'backupInfo');
                 recs.forEach(r => { if (r.profileId === pid) t.objectStore(STORE_NAME).delete(r.id); });
                 pls.forEach(x => { if (x.profileId === pid) t.objectStore(PLANT_STORE).delete(x.id); });
                 t.objectStore(PROFILE_STORE).delete(pid);
@@ -647,7 +676,9 @@
         async function renderDashboard() {
             renderHeader();
             renderTabs();
-            const records = (await getAllRecords()).filter(r => r.plantId === currentPlantId).sort((a, b) => a.id - b.id);
+            const allRecords = await getAllRecords();
+            const records = allRecords.filter(r => r.plantId === currentPlantId).sort((a, b) => a.id - b.id);
+            renderBackupReminder(allRecords);
 
             const setBox = (box, rec) => {
                 box.innerHTML = rec ? `<img src="${rec.photo}" class="w-full h-full object-cover rounded-lg">` : "사진 없음";
@@ -903,36 +934,123 @@
             }
         }
 
-        // ---------- 백업 / 복원 ----------
-        async function exportData() {
-            try {
-                const backupData = {
-                    app: 'plant-diary', version: 2, exportedAt: new Date().toISOString(),
-                    profiles: await req(db.transaction(PROFILE_STORE).objectStore(PROFILE_STORE).getAll()),
-                    plants: await req(db.transaction(PLANT_STORE).objectStore(PLANT_STORE).getAll()),
-                    records: await getAllRecords()
-                };
-                const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-                const fileName = `plant_journal_backup_${new Date().toISOString().slice(0, 10)}.json`;
+        // ---------- 백업 알림 ----------
+        // meta 'backupInfo' = { [profileId]: { at: 마지막 백업 시각, lastId: 그때까지의 마지막 기록 번호, snoozeUntil } }
+        const DAY = 24 * 60 * 60 * 1000;
+        const BACKUP_FIRST_RECORDS = 3;   // 한 번도 백업 안 했으면 기록 3개부터 알림
+        const BACKUP_DAYS = 7;            // 백업 뒤 새 기록이 있고 7일이 지나면 알림
+        const BACKUP_MAX_NEW = 10;        // 백업 뒤 새 기록이 10개 넘게 쌓이면 바로 알림
+        const SNOOZE_DAYS = 3;
 
-                if (navigator.canShare) {
-                    const file = new File([blob], fileName, { type: 'application/json' });
-                    if (navigator.canShare({ files: [file] })) {
-                        await navigator.share({ title: '식물일기 백업', files: [file] });
-                        return;
+        const getBackupInfo = async () => (await metaGet('backupInfo')) || {};
+
+        async function putBackupInfo(info) {
+            const t = db.transaction(META_STORE, 'readwrite');
+            t.objectStore(META_STORE).put(info, 'backupInfo');
+            await done(t);
+        }
+
+        // 백업(또는 백업 파일에서 불러오기)이 끝난 프로필들을 "백업됨"으로 표시
+        async function markBackedUp(profileIds) {
+            const recs = await getAllRecords();
+            const info = await getBackupInfo();
+            const now = Date.now();
+            profileIds.forEach(pid => {
+                info[pid] = { at: now, lastId: recs.filter(r => r.profileId === pid).reduce((m, r) => Math.max(m, r.id), 0) };
+            });
+            await putBackupInfo(info);
+        }
+
+        function backupStatus(info, recs, now = Date.now()) {
+            if (!recs.length) return { need: false, fresh: 0 };
+            if (!info || !info.at) return { need: recs.length >= BACKUP_FIRST_RECORDS && !(info && info.snoozeUntil > now), fresh: recs.length, never: true };
+            const fresh = recs.filter(r => r.id > (info.lastId || 0)).length;
+            const due = fresh >= BACKUP_MAX_NEW || (fresh > 0 && now - info.at >= BACKUP_DAYS * DAY);
+            return { need: due && !(info.snoozeUntil > now), fresh };
+        }
+
+        const fmtDate = (ms) => new Date(ms).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+        async function renderBackupReminder(allRecords) {
+            try {
+                if (!profile) { $('backupReminder').classList.add('hidden'); return; }
+                const recs = (allRecords || await getAllRecords()).filter(r => r.profileId === profile.id);
+                const info = (await getBackupInfo())[profile.id];
+                const st = backupStatus(info, recs);
+                $('backupReminderText').innerText = st.never
+                    ? `아직 한 번도 백업하지 않았어요. 어른과 함께 눌러 주세요!`
+                    : `새 기록이 ${st.fresh}개 있어요. 어른과 함께 눌러 주세요!`;
+                $('backupReminder').classList.toggle('hidden', !st.need);
+                $('backupOwner').innerText = profile.name;
+                $('lastBackupText').innerText = info && info.at ? `마지막 백업: ${fmtDate(info.at)}` : '아직 백업한 적이 없어요.';
+            } catch (e) { console.error(e); }
+        }
+
+        async function snoozeBackupReminder() {
+            if (!profile) return;
+            try {
+                const info = await getBackupInfo();
+                info[profile.id] = { ...(info[profile.id] || {}), snoozeUntil: Date.now() + SNOOZE_DAYS * DAY };
+                await putBackupInfo(info);
+            } catch (e) {}
+            $('backupReminder').classList.add('hidden');
+        }
+
+        // ---------- 백업 / 복원 ----------
+        // 파일을 공유 시트(아이폰/아이패드) 또는 다운로드로 내보냄. 사용자가 취소하면 false
+        // fileName은 공유 시트용(한글 가능), downloadName은 다운로드용(크롬은 한글 파일 이름을 'download'로 바꿔 버려서 영문만)
+        async function shareOrDownload(blob, fileName, title, downloadName = fileName) {
+            if (navigator.canShare) {
+                const file = new File([blob], fileName, { type: 'application/json' });
+                if (navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({ title, files: [file] });
+                        return true;
+                    } catch (err) {
+                        if (err.name === 'AbortError') return false;
+                        // NotAllowedError 등: 공유가 막히면 다운로드로 대신함
                     }
                 }
+            }
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = downloadName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            return true;
+        }
 
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
+        const safeFileName = (s) => String(s).replace(/[\\/:*?"<>|\s]+/g, '_');
+
+        // scope: 'profile' = 지금 프로필만(기본), 'all' = 이 기기의 모든 프로필(어른용)
+        async function exportData(scope = 'profile') {
+            if (scope === 'profile' && !profile) return;
+            try {
+                let profiles = await getProfiles();
+                let pls = await req(db.transaction(PLANT_STORE).objectStore(PLANT_STORE).getAll());
+                let recs = await getAllRecords();
+                if (scope === 'profile') {
+                    profiles = profiles.filter(p => p.id === profile.id);
+                    pls = pls.filter(p => p.profileId === profile.id);
+                    const plantIds = new Set(pls.map(p => p.id));
+                    recs = recs.filter(r => plantIds.has(r.plantId));
+                }
+                const backupData = { app: 'plant-diary', version: 2, scope, exportedAt: new Date().toISOString(), profiles, plants: pls, records: recs };
+                const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+                const day = new Date().toISOString().slice(0, 10);
+                const fileName = scope === 'profile' ? `plant_journal_${safeFileName(profile.name)}_${day}.json` : `plant_journal_all_${day}.json`;
+                const title = scope === 'profile' ? `${profile.name}의 식물일기 백업` : '식물일기 전체 백업';
+
+                const downloadName = scope === 'profile' ? `plant_journal_profile_${day}.json` : fileName;
+                if (!(await shareOrDownload(blob, fileName, title, downloadName))) return;
+                await markBackedUp(profiles.map(p => p.id));
+                await renderBackupReminder();
             } catch (err) {
-                if (err.name !== 'AbortError') alert('백업 파일 생성 중 오류가 발생했습니다.');
+                console.error(err);
+                alert('백업 파일을 만들지 못했어요. 다시 해 주세요.');
             }
         }
 
@@ -942,8 +1060,12 @@
             const okRec = r => r && typeof r.photo === 'string' && r.photo.startsWith('data:image/');
             const fix = r => ({ ...r, stages: Array.isArray(r.stages) ? r.stages : [], actions: Array.isArray(r.actions) ? r.actions : [] });
             if (data.version === 2 && Array.isArray(data.profiles) && data.profiles.length && Array.isArray(data.plants)) {
-                const ids = new Set(data.plants.map(p => p.id));
-                return { profiles: data.profiles, plants: data.plants, records: data.records.filter(r => okRec(r) && ids.has(r.plantId)).map(fix) };
+                const profiles = data.profiles.filter(p => p && p.id);
+                const profIds = new Set(profiles.map(p => p.id));
+                const plants = data.plants.filter(p => p && p.id && profIds.has(p.profileId));
+                const ids = new Set(plants.map(p => p.id));
+                if (!profiles.length) return null;
+                return { profiles, plants, records: data.records.filter(r => okRec(r) && ids.has(r.plantId)).map(fix) };
             }
             if (Array.isArray(data.plants)) {
                 const names = [...new Set([...data.plants.filter(p => typeof p === 'string'), ...data.records.filter(okRec).map(r => r.plantName)].filter(Boolean))];
@@ -964,35 +1086,111 @@
             return null;
         }
 
+        // mode: 'add' = 새 프로필로 더하기(기본), 'replace' = 전체 바꾸기(어른용)
+        let importMode = 'add';
+        function startImport(mode) {
+            importMode = mode === 'replace' ? 'replace' : 'add';
+            $('importFileInput').click();
+        }
+
+        // 이름이 겹치면 '새로이2', '새로이3'…처럼 6글자 안에서 바꿈
+        function uniqueProfileName(name, taken) {
+            const base = String(name ?? '').trim().slice(0, 6) || '친구';
+            if (!taken.has(base)) return base;
+            for (let n = 2; ; n++) {
+                const cand = base.slice(0, 6 - String(n).length) + n;
+                if (!taken.has(cand)) return cand;
+            }
+        }
+
+        const countText = (conv, pid) => {
+            const plantIds = new Set(conv.plants.filter(p => p.profileId === pid).map(p => p.id));
+            return `식물 ${plantIds.size}개, 기록 ${conv.records.filter(r => plantIds.has(r.plantId)).length}개`;
+        };
+
+        // 백업 파일의 프로필을 모두 새 고유번호로 바꿔 더함. 기존 데이터는 건드리지 않음
+        async function importAsNewProfiles(conv) {
+            const existing = await getProfiles();
+            const taken = new Set(existing.map(p => p.name));
+            const now = Date.now();
+            const profMap = {}, plantMap = {};
+            const newProfiles = conv.profiles.map((p, i) => {
+                const np = { ...p, id: uid(), name: uniqueProfileName(p.name, taken), icon: PROFILE_ICONS.includes(p.icon) ? p.icon : PROFILE_ICONS[0], createdAt: now + i };
+                taken.add(np.name);
+                profMap[p.id] = np;
+                return np;
+            });
+            const newPlants = conv.plants.map(pl => {
+                const np = { ...pl, id: uid(), profileId: profMap[pl.profileId].id };
+                plantMap[pl.id] = np;
+                return np;
+            });
+            const t = db.transaction([STORE_NAME, PLANT_STORE, PROFILE_STORE, META_STORE], 'readwrite');
+            newProfiles.forEach(p => t.objectStore(PROFILE_STORE).put(p));
+            newPlants.forEach(p => t.objectStore(PLANT_STORE).put(p));
+            conv.records.forEach(r => {
+                const pl = plantMap[r.plantId];
+                const c = { ...r, plantId: pl.id, profileId: pl.profileId };
+                delete c.id;
+                t.objectStore(STORE_NAME).add(c);
+            });
+            t.objectStore(META_STORE).put(newProfiles[0].id, 'currentProfileId');
+            await done(t);
+            return newProfiles.map((p, i) => ({ from: conv.profiles[i].name, to: p }));
+        }
+
+        async function replaceAll(conv) {
+            const t = db.transaction([STORE_NAME, PLANT_STORE, PROFILE_STORE, META_STORE], 'readwrite');
+            t.objectStore(STORE_NAME).clear();
+            t.objectStore(PLANT_STORE).clear();
+            t.objectStore(PROFILE_STORE).clear();
+            conv.profiles.forEach(p => t.objectStore(PROFILE_STORE).put(p));
+            conv.plants.forEach(p => t.objectStore(PLANT_STORE).put(p));
+            conv.records.forEach(r => { const c = { ...r }; delete c.id; t.objectStore(STORE_NAME).add(c); });
+            t.objectStore(META_STORE).put(conv.profiles[0].id, 'currentProfileId');
+            t.objectStore(META_STORE).put({}, 'backupInfo');
+            await done(t);
+        }
+
         function importData(event) {
             const file = event.target.files[0];
             event.target.value = '';
             if (!file) return;
+            const mode = importMode;
+            importMode = 'add';
             const reader = new FileReader();
             reader.onerror = () => alert('파일을 읽지 못했어요.');
             reader.onload = async (e) => {
                 let data;
-                try { data = JSON.parse(e.target.result); } catch (err) { return alert('올바른 백업 파일이 아니에요.'); }
+                try { data = JSON.parse(e.target.result); } catch (err) { return alert('식물일기 백업 파일이 아니에요.'); }
                 const conv = convertBackup(data);
-                if (!conv) return alert('올바른 백업 파일 형식이 아닙니다.');
-                if (!confirm(`지금 있는 기록이 모두 지워지고, 백업 파일의 기록 ${conv.records.length}개로 바뀌어요. 계속할까요?`)) return;
+                if (!conv) return alert('식물일기 백업 파일이 아니에요.');
+                const list = conv.profiles.map(p => `· ${p.icon || '🌱'} ${p.name} (${countText(conv, p.id)})`).join('\n');
+
+                if (mode === 'replace') {
+                    const cur = await getProfiles();
+                    const curRecs = await getAllRecords();
+                    const typed = prompt(`⚠️ 이 기기의 프로필 ${cur.length}명, 기록 ${curRecs.length}개가 모두 지워지고 아래 내용으로 바뀌어요.\n${list}\n\n계속하려면 '바꾸기'라고 써 주세요:`);
+                    if (typed === null || typed.trim() !== '바꾸기') return;
+                } else if (!confirm(`백업 파일을 새 프로필로 더할까요?\n${list}\n\n지금 있는 기록은 그대로 있어요.`)) return;
+
                 try {
-                    const t = db.transaction([STORE_NAME, PLANT_STORE, PROFILE_STORE, META_STORE], 'readwrite');
-                    t.objectStore(STORE_NAME).clear();
-                    t.objectStore(PLANT_STORE).clear();
-                    t.objectStore(PROFILE_STORE).clear();
-                    conv.profiles.forEach(p => t.objectStore(PROFILE_STORE).put(p));
-                    conv.plants.forEach(p => t.objectStore(PLANT_STORE).put(p));
-                    conv.records.forEach(r => { const c = { ...r }; delete c.id; t.objectStore(STORE_NAME).add(c); });
-                    t.objectStore(META_STORE).put(conv.profiles[0].id, 'currentProfileId');
-                    await done(t);
+                    let added = [];
+                    if (mode === 'replace') await replaceAll(conv);
+                    else added = await importAsNewProfiles(conv);
+                    const renamed = added.filter(x => x.from !== x.to.name);
                     currentPlantId = null;
                     await loadState();
+                    // 방금 파일에서 불러온 내용은 그 파일이 백업이므로 "백업됨"으로 표시
+                    const doneIds = mode === 'replace' ? conv.profiles.map(p => p.id) : added.map(x => x.to.id);
+                    try { await markBackedUp(doneIds); } catch (err) {}
+                    closeProfileModal();
                     await renderDashboard();
-                    alert('데이터가 성공적으로 복원되었습니다! 🎉');
+                    const note = renamed.length ? `\n이름이 겹쳐서 바꿨어요: ${renamed.map(x => `${x.from} → ${x.to.name}`).join(', ')}` : '';
+                    alert(`불러왔어요! 🎉${note}`);
                 } catch (err) {
                     console.error(err);
-                    alert('복원하지 못했어요. 기존 기록은 그대로예요.');
+                    alert('불러오지 못했어요. 지금 있는 기록은 그대로예요.');
                 }
             };
             reader.readAsText(file);
