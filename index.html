@@ -81,7 +81,7 @@
 
     <!-- 관찰 기록 작성 모달 -->
     <div id="recordModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white w-full max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto shadow-2xl space-y-5">
+        <div id="recordModalBody" class="bg-white w-full max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto shadow-2xl space-y-5">
             <div class="flex items-center justify-between border-b pb-3">
                 <button type="button" onclick="closeRecordModal()" class="text-green-700 font-bold text-base bg-green-50 px-3 py-1.5 rounded-xl hover:bg-green-100">〈 뒤로</button>
                 <h2 id="modalTitle" class="text-xl text-green-700 font-bold text-center flex-1">📝 오늘의 관찰 카드 쓰기</h2>
@@ -105,12 +105,13 @@
             </div>
 
             <div>
-                <label class="block text-base font-bold text-gray-700 mb-1">2. 지금 식물은 어떤 모습인가요? (중복 가능)</label>
+                <label class="block text-base font-bold text-gray-700 mb-1">2. 지금 식물은 어떤 모습인가요? (중복 가능, 💤 잠자고 있어요는 혼자만)</label>
                 <div class="grid grid-cols-2 gap-2" id="stageSelector"></div>
             </div>
 
             <div class="space-y-3 bg-green-50/60 p-4 rounded-2xl border border-green-100">
                 <label class="block text-base font-bold text-gray-700">3. 식물을 자세히 살펴봐요 🔍</label>
+                <p id="dormantHint" class="hidden text-sm text-green-700 font-bold">💤 아직 싹이 나기 전이에요. 흙 상태만 살펴봐요!</p>
                 <div class="grid grid-cols-2 gap-3">
                     <div><span class="text-sm font-bold text-gray-600">🍃 잎 색깔</span><select id="leafColor" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
                     <div><span class="text-sm font-bold text-gray-600">📏 잎의 크기·양</span><select id="leafSize" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
@@ -319,7 +320,7 @@
                 b.type = 'button';
                 b.className = 'stage-btn p-3 border-2 border-gray-200 rounded-xl text-center text-base';
                 b.textContent = t;
-                b.onclick = () => b.classList.toggle('stage-selected');
+                b.onclick = () => toggleStage(b);
                 $('stageSelector').appendChild(b);
             });
             ACTIONS.forEach(t => {
@@ -331,6 +332,31 @@
                 $('actionSelector').appendChild(b);
             });
             Object.entries(OPTIONS).forEach(([id, list]) => list.forEach(t => $(id).add(new Option(t))));
+        }
+
+        function isDormant() {
+            return [...document.querySelectorAll('.stage-btn.stage-selected')].some(b => b.textContent === STAGES[0]);
+        }
+
+        // 💤 잠자고 있어요(발아 전)는 다른 단계와 함께 고를 수 없음
+        function toggleStage(btn) {
+            const isDormantBtn = btn.textContent === STAGES[0];
+            const turnOn = !btn.classList.contains('stage-selected');
+            if (turnOn) {
+                document.querySelectorAll('.stage-btn').forEach(b => {
+                    if (b === btn) return;
+                    if (isDormantBtn || b.textContent === STAGES[0]) b.classList.remove('stage-selected');
+                });
+            }
+            btn.classList.toggle('stage-selected', turnOn);
+            updateObservationFields();
+        }
+
+        // 발아 전이면 흙 상태만 보여줌
+        function updateObservationFields() {
+            const dormant = isDormant();
+            ['leafColor', 'leafSize', 'bugState'].forEach(id => $(id).parentElement.classList.toggle('hidden', dormant));
+            $('dormantHint').classList.toggle('hidden', !dormant);
         }
 
         async function initApp() {
@@ -430,7 +456,7 @@
                         <div class="flex flex-wrap gap-1.5">${(rec.stages || []).map(t => chip(t, 'bg-green-200 text-green-900')).join('')}</div>
                     </div>
                     <p class="text-lg text-gray-800 font-bold break-words">💬 "${esc(rec.note || '오늘도 무럭무럭 자라라!')}"</p>
-                    <div class="flex flex-wrap gap-1.5">${[rec.leafColor, rec.leafSize, rec.soil, rec.bugState].filter(Boolean).map(t => chip(t, 'bg-white border border-green-200 text-gray-700')).join('')}</div>
+                    <div class="flex flex-wrap gap-1.5">${((rec.stages || []).includes(STAGES[0]) ? [rec.soil] : [rec.leafColor, rec.leafSize, rec.soil, rec.bugState]).filter(Boolean).map(t => chip(t, 'bg-white border border-green-200 text-gray-700')).join('')}</div>
                     <div class="flex flex-wrap items-center gap-1.5"><span>👐</span>${(rec.actions || []).map(t => chip(t, 'bg-green-100 text-green-800')).join('')}</div>
                     <div class="flex justify-end gap-2 pt-1">
                         <button type="button" onclick="openRecordModal(${Number(rec.id)})" class="text-sm bg-white border border-green-300 text-green-700 px-4 py-2.5 rounded-xl font-bold hover:bg-green-50">✏️ 수정</button>
@@ -486,7 +512,10 @@
                 $('modalTitle').innerText = "📝 오늘의 관찰 카드 쓰기";
                 $('photoPreviewBox').innerHTML = `<span class="text-4xl mb-1">📷</span><span class="text-base font-bold">터치해서 사진 선택하기!</span>`;
             }
+            updateObservationFields();
             $('recordModal').classList.remove('hidden');
+            $('recordModalBody').scrollTop = 0;
+            requestAnimationFrame(() => { $('recordModalBody').scrollTop = 0; });
         }
 
         function closeRecordModal() {
@@ -609,7 +638,8 @@
             btn.disabled = true;
             btn.classList.add('opacity-60');
             try {
-                const stages = Array.from(document.querySelectorAll('.stage-btn.stage-selected')).map(b => b.textContent);
+                const dormant = isDormant();
+                const stages = dormant ? [STAGES[0]] : Array.from(document.querySelectorAll('.stage-btn.stage-selected')).map(b => b.textContent);
                 const actions = Array.from(document.querySelectorAll('.action-btn.action-selected')).map(b => b.textContent);
                 const today = new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
 
@@ -618,13 +648,15 @@
                     date: (editingRecordId && editingDate) ? editingDate : today,
                     photo: capturedImage,
                     stages: stages.length > 0 ? stages : ['🌱 무럭무럭 자라는 중'],
-                    leafColor: $('leafColor').value,
-                    leafSize: $('leafSize').value,
                     soil: $('soilState').value,
-                    bugState: $('bugState').value,
                     note: $('voiceNoteInput').value,
                     actions: actions.length > 0 ? actions : ['보기만 했어요 👀']
                 };
+                if (!dormant) {
+                    recordData.leafColor = $('leafColor').value;
+                    recordData.leafSize = $('leafSize').value;
+                    recordData.bugState = $('bugState').value;
+                }
                 if (editingRecordId) recordData.id = editingRecordId;
 
                 await saveRecordToDB(recordData);
