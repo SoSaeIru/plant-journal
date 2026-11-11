@@ -11,10 +11,11 @@
     <meta name="apple-mobile-web-app-title" content="식물일기">
     <link rel="apple-touch-icon" href="https://img.icons8.com/emoji/192/potted-plant-emoji.png">
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <!-- 인터넷 없이도 열리도록 모두 앱 안의 파일을 쓴다. 스타일 파일은 npm run build로 만든다 -->
+    <link rel="stylesheet" href="styles.css?v=806e7117">
+    <script src="vendor/confetti.browser.js?v=eb3a3525" defer></script>
     <style>
+        @font-face { font-family: 'Jua'; src: url('fonts/Jua-Regular.woff2?v=83edad5d') format('woff2'); font-display: swap; }
         body { font-family: 'Jua', sans-serif; background-color: #f0fdf4; -webkit-tap-highlight-color: transparent; font-size: 1.1rem; }
         .tab-active { background-color: #22c55e !important; color: white !important; border-color: #16a34a !important; box-shadow: 0 2px 6px rgba(34,197,94,.4); }
         .stage-selected { border-color: #22c55e !important; background-color: #f0fdf4 !important; font-weight: bold; color: #15803d !important; }
@@ -144,8 +145,8 @@
                     <div><span class="text-sm font-bold text-gray-600">🍃 잎은 무슨 색?</span><select id="leafColor" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
                     <div><span class="text-sm font-bold text-gray-600">📏 잎은 얼마나?</span><select id="leafSize" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
                     <div><span class="text-sm font-bold text-gray-600">💧 흙은 어때요?</span><select id="soilState" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
-                    <div><span class="text-sm font-bold text-gray-600">🔍 잎 위에 뭐가 있어요?</span><select id="bugState" onchange="updateBugHint()" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select><p id="bugHint" class="hidden text-sm font-bold text-orange-600 mt-1">어른에게 보여줘요 👀</p></div>
                     <div id="weatherWrap" class="hidden"><span class="text-sm font-bold text-gray-600">🌤️ 오늘 날씨는?</span><select id="weather" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
+                    <div class="col-span-2"><span class="text-sm font-bold text-gray-600">🔍 잎 위에 뭐가 있어요?</span><select id="bugState" onchange="updateBugHint()" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select><p id="bugHint" class="hidden text-sm font-bold text-orange-600 mt-1">어른에게 보여줘요 👀</p></div>
                 </div>
             </div>
 
@@ -226,6 +227,7 @@
             weather: ['🌞 맑아요', '☁️ 흐려요', '🌧️ 비가 와요']
         };
 
+        const PICK_LABEL = '골라요 👆';   // 관찰 칸 처음 값: 아이가 본 것만 고르도록 비워 둠
         const BUG_OPTIONS = [{ t: '✨ 아무것도 없어요' }, { t: '🐛 벌레가 있어요' }, { t: '🦋 나비나 벌이 왔어요', outOnly: true }, { t: '💧 물방울이 있어요' }];
         const PROFILE_ICONS = ['🌱', '🌻', '🐰', '🐻', '🦊', '🐼', '🐥', '🚀'];
         let newProfileIcon = PROFILE_ICONS[0];
@@ -530,7 +532,7 @@
                 b.onclick = () => b.classList.toggle('action-selected');
                 $('actionSelector').appendChild(b);
             });
-            Object.entries(OPTIONS).forEach(([id, list]) => list.forEach(t => $(id).add(new Option(t))));
+            Object.entries(OPTIONS).forEach(([id, list]) => { $(id).add(new Option(PICK_LABEL, '')); list.forEach(t => $(id).add(new Option(t))); });
             PROFILE_ICONS.forEach(icon => {
                 const b = document.createElement('button');
                 b.type = 'button';
@@ -550,6 +552,7 @@
             const sel = $('bugState');
             const keep = sel.value;
             sel.innerHTML = '';
+            sel.add(new Option(PICK_LABEL, ''));
             BUG_OPTIONS.filter(o => place === 'out' || !o.outOnly).forEach(o => sel.add(new Option(o.t)));
             if (keep && [...sel.options].some(o => o.value === keep)) sel.value = keep;
         }
@@ -733,7 +736,7 @@
             $('cameraInput').value = '';
             document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('stage-selected'));
             document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('action-selected'));
-            Object.keys(OPTIONS).forEach(id => { $(id).selectedIndex = 0; });
+            [...Object.keys(OPTIONS), 'bugState'].forEach(id => { $(id).selectedIndex = 0; });
 
             const select = $('recordPlantSelect');
             select.innerHTML = '';
@@ -918,15 +921,17 @@
                     date: (editingRecordId && editingDate) ? editingDate : today,
                     photo: capturedImage,
                     stages: stages.length > 0 ? stages : ['🌱 무럭무럭 자라는 중'],
-                    soil: $('soilState').value,
                     note: $('voiceNoteInput').value,
                     actions: actions.length > 0 ? actions : ['보기만 했어요 👀']
                 };
+                // 고른 칸만 저장 (안 고른 칸은 기록하지 않음). 💤면 흙 상태만
+                const picked = (field, id) => { if ($(id).value) recordData[field] = $(id).value; };
+                picked('soil', 'soilState');
                 if (!dormant) {
-                    recordData.leafColor = $('leafColor').value;
-                    recordData.leafSize = $('leafSize').value;
-                    recordData.bugState = $('bugState').value;
-                    if (selectedPlace() === 'out') recordData.weather = $('weather').value;
+                    picked('leafColor', 'leafColor');
+                    picked('leafSize', 'leafSize');
+                    picked('bugState', 'bugState');
+                    if (selectedPlace() === 'out') picked('weather', 'weather');
                 }
                 if (editingRecordId) recordData.id = editingRecordId;
 
@@ -1222,6 +1227,12 @@
         function closeImageZoom() { $('imageZoomModal').classList.add('hidden'); }
 
         initApp();
+
+        // 서비스 워커 등록: 한 번 열어 두면 인터넷이 없어도 앱이 열림
+        if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+            // 열 때마다 새 버전이 있는지 바로 확인 (브라우저가 미루지 않게)
+            navigator.serviceWorker.register('sw.js').then(reg => reg.update()).catch(err => console.warn('서비스 워커 등록 실패:', err));
+        }
     </script>
 </body>
 </html>
