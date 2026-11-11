@@ -27,18 +27,17 @@
 
     <header class="text-center my-6">
         <h1 id="appTitle" class="text-4xl text-green-600 drop-shadow-sm">🌿 초록 정원 🌱</h1>
-        <p class="text-gray-600 mt-1 text-base">내가 직접 키우고 관찰하는 세상에 하나뿐인 일기장</p>
+        <p class="text-gray-600 mt-1 text-base">내가 키우는 식물을 보고 적는 일기장</p>
         <button type="button" id="profileBtn" onclick="openProfileModal()" class="mt-3 bg-white border-2 border-green-200 text-green-800 px-5 py-2.5 rounded-full text-base font-bold shadow-sm"></button>
     </header>
 
-    <!-- 식물 탭 (백업/복원은 ⚙️ 관리 모드에서만 보임) -->
+    <!-- 식물 탭 (백업/복원은 ⚙️ 어른 메뉴에서만 보임) -->
     <div class="bg-white p-4 rounded-2xl shadow-md mb-6">
         <div class="flex items-center justify-between mb-3">
-            <h2 class="text-xl text-green-700 font-bold whitespace-nowrap">🌱 내 식물 목록</h2>
+            <h2 class="text-xl text-green-700 font-bold whitespace-nowrap">🌱 내 식물 친구들</h2>
             <div class="flex gap-1.5 flex-shrink-0">
-                <button type="button" onclick="toggleManageMode()" id="manageBtn" class="whitespace-nowrap bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-bold border border-gray-300">⚙️ 관리</button>
+                <button type="button" onclick="toggleManageMode()" id="manageBtn" class="whitespace-nowrap bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-bold border border-gray-300">⚙️ 어른 메뉴</button>
                 <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="importData(event)">
-                <button type="button" onclick="openNewPlantModal()" class="whitespace-nowrap bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-green-600 transition">+ 새 식물</button>
             </div>
         </div>
         <div id="plantTabs" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
@@ -46,12 +45,12 @@
             <p class="text-sm text-gray-600">선택한 식물: <span id="manageTarget" class="font-bold text-green-700"></span></p>
             <div class="grid grid-cols-2 gap-2">
                 <button type="button" onclick="editPlantName(currentPlantId)" class="whitespace-nowrap bg-white text-gray-700 py-2.5 rounded-xl text-base font-bold border border-gray-300">✏️ 식물 이름</button>
-                <button type="button" onclick="deletePlant(currentPlantId)" class="whitespace-nowrap bg-white text-red-500 py-2.5 rounded-xl text-base font-bold border border-red-200">🗑️ 식물 삭제</button>
+                <button type="button" onclick="deletePlant(currentPlantId)" class="whitespace-nowrap bg-white text-red-500 py-2.5 rounded-xl text-base font-bold border border-red-200">🗑️ 식물 지우기</button>
             </div>
             <button type="button" id="placeBtn" onclick="togglePlace()" class="w-full whitespace-nowrap bg-white text-gray-700 py-2.5 rounded-xl text-base font-bold border border-gray-300"></button>
             <div class="grid grid-cols-2 gap-2">
                 <button type="button" onclick="renameProfile()" class="whitespace-nowrap bg-white text-gray-700 py-2.5 rounded-xl text-base font-bold border border-gray-300">👤 내 이름</button>
-                <button type="button" onclick="deleteProfile()" class="whitespace-nowrap bg-white text-red-500 py-2.5 rounded-xl text-base font-bold border border-red-200">🗑️ 프로필 삭제</button>
+                <button type="button" onclick="deleteProfile()" class="whitespace-nowrap bg-white text-red-500 py-2.5 rounded-xl text-base font-bold border border-red-200">🗑️ 프로필 지우기</button>
             </div>
             <div class="pt-2 border-t border-gray-200 space-y-2">
                 <p class="text-sm text-gray-600">💾 <span id="backupOwner" class="font-bold text-green-700"></span>의 기록 지키기</p>
@@ -85,25 +84,25 @@
 
     <div id="dashboard" class="space-y-6">
         <div class="bg-white p-5 rounded-2xl shadow-md">
-            <h3 class="text-lg text-green-700 font-bold mb-3 flex items-center gap-2">✨ 처음 모습과 오늘의 모습</h3>
+            <h3 class="text-lg text-green-700 font-bold mb-3 flex items-center gap-2">✨ 얼마나 컸을까?</h3>
             <div class="grid grid-cols-2 gap-4 text-center">
                 <div class="border-2 border-dashed border-green-200 p-2 rounded-xl bg-green-50">
-                    <p class="text-sm text-gray-600 mb-1">처음 심었던 날 🌱</p>
-                    <div id="firstPhotoContainer" class="h-40 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden text-gray-400 cursor-pointer" onclick="showImageZoomFromContainer(this)">사진 없음</div>
+                    <p class="text-sm text-gray-600 mb-1">처음 모습 🌱</p>
+                    <div id="firstPhotoContainer" class="h-40 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden text-gray-400 cursor-pointer" onclick="showImageZoomFromContainer(this)">사진이 없어요</div>
                 </div>
                 <div class="border-2 border-dashed border-green-200 p-2 rounded-xl bg-green-50">
-                    <p class="text-sm text-gray-600 mb-1">오늘 찍은 모습 📷</p>
-                    <div id="latestPhotoContainer" class="h-40 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden text-gray-400 cursor-pointer" onclick="showImageZoomFromContainer(this)">사진 없음</div>
+                    <p class="text-sm text-gray-600 mb-1">지금 모습 📷</p>
+                    <div id="latestPhotoContainer" class="h-40 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden text-gray-400 cursor-pointer" onclick="showImageZoomFromContainer(this)">사진이 없어요</div>
                 </div>
             </div>
         </div>
 
         <button type="button" onclick="openRecordModal()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white text-2xl py-4 rounded-2xl shadow-lg hover:from-green-600 hover:to-emerald-700 transition transform active:scale-95 flex items-center justify-center gap-3 font-bold">
-            📷 오늘 관찰 기록 쓰기!
+            📷 오늘 식물 만나기!
         </button>
 
         <div class="bg-white p-5 rounded-2xl shadow-md">
-            <h3 class="text-lg text-green-700 font-bold mb-4">📖 성장 타임라인 앨범</h3>
+            <h3 class="text-lg text-green-700 font-bold mb-4">📖 쑥쑥 사진첩</h3>
             <div id="timelineList" class="space-y-4"></div>
         </div>
     </div>
@@ -113,45 +112,45 @@
         <div id="recordModalBody" class="bg-white w-full max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto shadow-2xl space-y-5">
             <div class="flex items-center justify-between border-b pb-3">
                 <button type="button" onclick="closeRecordModal()" class="text-green-700 font-bold text-base bg-green-50 px-3 py-1.5 rounded-xl hover:bg-green-100">〈 뒤로</button>
-                <h2 id="modalTitle" class="text-xl text-green-700 font-bold text-center flex-1">📝 오늘의 관찰 카드 쓰기</h2>
+                <h2 id="modalTitle" class="text-xl text-green-700 font-bold text-center flex-1">📝 오늘 식물 만나기</h2>
                 <div class="w-16"></div>
             </div>
 
             <div>
-                <label class="block text-base font-bold text-green-700 mb-1">0. 어떤 식물인가요? 🌱</label>
+                <label class="block text-base font-bold text-green-700 mb-1">1. 어떤 식물이에요? 🌱</label>
                 <select id="recordPlantSelect" onchange="onRecordPlantChange()" class="w-full p-3.5 border-2 border-green-300 rounded-xl bg-green-50 text-lg font-bold text-green-900"></select>
             </div>
 
             <div>
-                <label class="block text-base font-bold text-gray-700 mb-1">1. 오늘의 식물 사진 📷</label>
+                <label class="block text-base font-bold text-gray-700 mb-1">2. 사진을 넣어요 📷</label>
                 <input type="file" id="photoInput" accept="image/*" class="hidden" onchange="previewImage(event)">
                 <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="previewImage(event)">
                 <div id="photoPreviewBox" class="border-2 border-dashed border-green-400 h-44 rounded-2xl flex flex-col items-center justify-center bg-green-50 cursor-pointer hover:bg-green-100 transition text-green-600 mb-2 overflow-hidden" onclick="document.getElementById('photoInput').click()"></div>
                 <div class="grid grid-cols-2 gap-2">
-                    <button type="button" onclick="document.getElementById('photoInput').click()" class="bg-green-100 text-green-800 py-3 rounded-xl text-base font-bold flex items-center justify-center gap-1.5 hover:bg-green-200">📁 사진 보관함에서 고르기</button>
-                    <button type="button" onclick="document.getElementById('cameraInput').click()" class="bg-emerald-500 text-white py-3 rounded-xl text-base font-bold flex items-center justify-center gap-1.5 hover:bg-emerald-600 shadow">📸 카메라로 바로 찍기</button>
+                    <button type="button" onclick="document.getElementById('photoInput').click()" class="bg-green-100 text-green-800 py-3 rounded-xl text-base font-bold flex items-center justify-center gap-1.5 hover:bg-green-200">🖼️ 사진 고르기</button>
+                    <button type="button" onclick="document.getElementById('cameraInput').click()" class="bg-emerald-500 text-white py-3 rounded-xl text-base font-bold flex items-center justify-center gap-1.5 hover:bg-emerald-600 shadow">📸 바로 찍기</button>
                 </div>
             </div>
 
             <div>
-                <label class="block text-base font-bold text-gray-700 mb-1">2. 지금 식물은 어떤 모습인가요? (중복 가능, 💤 잠자고 있어요는 혼자만)</label>
+                <label class="block text-base font-bold text-gray-700 mb-1">3. 지금 식물은 어떤 모습이에요? (여러 개 골라도 돼요)</label>
                 <div class="grid grid-cols-2 gap-2" id="stageSelector"></div>
             </div>
 
             <div class="space-y-3 bg-green-50/60 p-4 rounded-2xl border border-green-100">
-                <label class="block text-base font-bold text-gray-700">3. 식물을 자세히 살펴봐요 🔍</label>
+                <label class="block text-base font-bold text-gray-700">4. 식물을 자세히 살펴봐요 🔍</label>
                 <p id="dormantHint" class="hidden text-sm text-green-700 font-bold">💤 아직 싹이 나기 전이에요. 흙 상태만 살펴봐요!</p>
                 <div class="grid grid-cols-2 gap-3">
-                    <div><span class="text-sm font-bold text-gray-600">🍃 잎 색깔</span><select id="leafColor" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
-                    <div><span class="text-sm font-bold text-gray-600">📏 잎의 크기·양</span><select id="leafSize" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
-                    <div><span class="text-sm font-bold text-gray-600">💧 흙 상태</span><select id="soilState" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
-                    <div><span class="text-sm font-bold text-gray-600">🔍 잎 위에 뭐가 있어요?</span><select id="bugState" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
+                    <div><span class="text-sm font-bold text-gray-600">🍃 잎은 무슨 색?</span><select id="leafColor" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
+                    <div><span class="text-sm font-bold text-gray-600">📏 잎은 얼마나?</span><select id="leafSize" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
+                    <div><span class="text-sm font-bold text-gray-600">💧 흙은 어때요?</span><select id="soilState" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
+                    <div><span class="text-sm font-bold text-gray-600">🔍 잎 위에 뭐가 있어요?</span><select id="bugState" onchange="updateBugHint()" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select><p id="bugHint" class="hidden text-sm font-bold text-orange-600 mt-1">어른에게 보여줘요 👀</p></div>
                     <div id="weatherWrap" class="hidden"><span class="text-sm font-bold text-gray-600">🌤️ 오늘 날씨는?</span><select id="weather" class="w-full p-3 border rounded-xl bg-white text-base font-bold mt-1"></select></div>
                 </div>
             </div>
 
             <div>
-                <label class="block text-base font-bold text-gray-700 mb-1">4. 새로이가 발견한 것 🎤</label>
+                <label class="block text-base font-bold text-gray-700 mb-1">5. 내가 본 것을 말해요 🎤</label>
                 <div class="flex gap-2 items-center">
                     <div class="relative flex-1 flex items-center">
                         <input type="text" id="voiceNoteInput" placeholder="마이크를 누르고 말해요!" class="w-full p-3.5 pr-10 border-2 border-gray-200 rounded-xl text-base font-bold" oninput="checkInputText()">
@@ -162,13 +161,13 @@
             </div>
 
             <div>
-                <label class="block text-base font-bold text-gray-700 mb-1">5. 오늘 내가 해준 일 👐</label>
+                <label class="block text-base font-bold text-gray-700 mb-1">6. 오늘 내가 해준 일 👐</label>
                 <div class="flex flex-wrap gap-2" id="actionSelector"></div>
             </div>
 
             <div class="flex gap-3 pt-2">
-                <button type="button" onclick="closeRecordModal()" class="flex-1 bg-gray-200 text-gray-700 py-3.5 rounded-xl font-bold text-lg hover:bg-gray-300">취소</button>
-                <button type="button" id="saveBtn" onclick="saveRecord()" class="flex-1 bg-green-500 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-green-600 shadow-md">저장하기 🎉</button>
+                <button type="button" onclick="closeRecordModal()" class="flex-1 bg-gray-200 text-gray-700 py-3.5 rounded-xl font-bold text-lg hover:bg-gray-300">그만하기</button>
+                <button type="button" id="saveBtn" onclick="saveRecord()" class="flex-1 bg-green-500 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-green-600 shadow-md">다 했어요! 🎉</button>
             </div>
         </div>
     </div>
@@ -179,7 +178,7 @@
             <h2 id="profileModalTitle" class="text-xl text-green-700 font-bold text-center">👤 누가 쓸까요?</h2>
             <div id="profileListBox"><div id="profileList" class="grid grid-cols-2 gap-2"></div></div>
             <div class="space-y-3">
-                <p id="profileCreateTitle" class="text-base font-bold text-gray-700 pt-3 border-t">새 친구 만들기</p>
+                <p id="profileCreateTitle" class="text-base font-bold text-gray-700 pt-3 border-t">🙋 처음 왔어요</p>
                 <input type="text" id="profileNameInput" maxlength="6" placeholder="이름을 써요" class="w-full p-3.5 border-2 border-gray-200 rounded-xl text-base font-bold">
                 <div id="iconPicker" class="grid grid-cols-4 gap-2"></div>
                 <button type="button" onclick="createProfile()" class="w-full bg-green-500 text-white py-3 rounded-xl font-bold text-lg hover:bg-green-600">만들기 🌱</button>
@@ -192,16 +191,16 @@
     <!-- 새 식물 추가 모달 -->
     <div id="newPlantModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl">
-            <h2 class="text-xl text-green-700 font-bold mb-3 text-center">🌱 새로운 식물 등록</h2>
-            <input type="text" id="newPlantName" placeholder="식물 이름 (예: 바질 🌿)" class="w-full p-3.5 border-2 border-gray-200 rounded-xl mb-4 text-base font-bold">
+            <h2 class="text-xl text-green-700 font-bold mb-3 text-center">🌱 새 친구 심기</h2>
+            <input type="text" id="newPlantName" placeholder="이름을 써요 (예: 바질 🌿)" class="w-full p-3.5 border-2 border-gray-200 rounded-xl mb-4 text-base font-bold">
             <p class="text-base font-bold text-gray-700 mb-1">어디서 자라요?</p>
             <div class="grid grid-cols-2 gap-2 mb-4" id="placePicker">
                 <button type="button" data-place="in" onclick="pickPlace('in')" class="place-btn p-3 border-2 border-gray-200 rounded-xl text-base font-bold">🏠 집 안</button>
                 <button type="button" data-place="out" onclick="pickPlace('out')" class="place-btn p-3 border-2 border-gray-200 rounded-xl text-base font-bold">🌳 집 밖</button>
             </div>
             <div class="flex gap-3">
-                <button type="button" onclick="closeNewPlantModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold text-base">취소</button>
-                <button type="button" onclick="addNewPlant()" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold text-base">등록하기</button>
+                <button type="button" onclick="closeNewPlantModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold text-base">그만하기</button>
+                <button type="button" onclick="addNewPlant()" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold text-base">심기 🌱</button>
             </div>
         </div>
     </div>
@@ -312,14 +311,14 @@
         }
 
         async function deleteRecordById(id) {
-            if (!confirm('이 관찰 기록을 삭제하시겠습니까?')) return;
+            if (!confirm('이 기록을 지울까요?')) return;
             try {
                 const t = db.transaction(STORE_NAME, 'readwrite');
                 t.objectStore(STORE_NAME).delete(id);
                 await done(t);
                 await renderDashboard();
             } catch (e) {
-                alert('삭제하지 못했어요. 다시 해 주세요.');
+                alert('지우지 못했어요. 다시 해 주세요.');
             }
         }
 
@@ -510,7 +509,7 @@
                 currentPlantId = null;
                 await loadPlants();
                 await renderDashboard();
-            } catch (e) { alert('삭제하지 못했어요. 다시 해 주세요.'); }
+            } catch (e) { alert('지우지 못했어요. 다시 해 주세요.'); }
         }
 
         // ---------- 초기화 ----------
@@ -592,6 +591,12 @@
             ['leafColor', 'leafSize', 'bugState'].forEach(id => $(id).parentElement.classList.toggle('hidden', dormant));
             $('weatherWrap').classList.toggle('hidden', dormant || selectedPlace() !== 'out');
             $('dormantHint').classList.toggle('hidden', !dormant);
+            updateBugHint();
+        }
+
+        // 🐛 벌레를 고르면 어른에게 알리도록 안내
+        function updateBugHint() {
+            $('bugHint').classList.toggle('hidden', isDormant() || !$('bugState').value.startsWith('🐛'));
         }
 
         async function initApp() {
@@ -611,7 +616,7 @@
         // ---------- 식물 탭 / 관리 ----------
         function toggleManageMode() {
             isManageMode = !isManageMode;
-            $('manageBtn').innerText = isManageMode ? "✅ 완료" : "⚙️ 관리";
+            $('manageBtn').innerText = isManageMode ? "✅ 닫기" : "⚙️ 어른 메뉴";
             $('managePanel').classList.toggle('hidden', !isManageMode);
             renderTabs();
         }
@@ -628,6 +633,12 @@
                 btn.onclick = async () => { currentPlantId = plant.id; await renderDashboard(); };
                 container.appendChild(btn);
             });
+            const add = document.createElement('button');
+            add.type = 'button';
+            add.className = 'w-full min-w-0 h-12 px-3 rounded-2xl border-2 border-dashed border-green-400 bg-white text-green-700 text-base font-bold truncate transition active:scale-95';
+            add.innerText = '+ 새 친구 심기';
+            add.onclick = openNewPlantModal;
+            container.appendChild(add);
             const cur = curPlant();
             $('manageTarget').innerText = cur ? cur.name : '';
             $('placeBtn').innerText = cur ? `📍 장소 바꾸기 (지금: ${PLACE_LABEL[cur.place === 'out' ? 'out' : 'in']})` : '';
@@ -661,7 +672,7 @@
         async function deletePlant(plantId) {
             const plant = plants.find(p => p.id === plantId);
             if (!plant) return;
-            if (!confirm(`'${plant.name}' 식물을 삭제할까요? 기록도 함께 사라져요.`)) return;
+            if (!confirm(`'${plant.name}' 식물을 지울까요? 기록도 함께 사라져요.`)) return;
             try {
                 await deleteRecordsByPlant(plantId);
                 const t = db.transaction(PLANT_STORE, 'readwrite');
@@ -669,7 +680,7 @@
                 await done(t);
                 await loadPlants();
                 await renderDashboard();
-            } catch (e) { alert('삭제하지 못했어요. 다시 해 주세요.'); }
+            } catch (e) { alert('지우지 못했어요. 다시 해 주세요.'); }
         }
 
         // ---------- 화면 그리기 ----------
@@ -681,14 +692,14 @@
             renderBackupReminder(allRecords);
 
             const setBox = (box, rec) => {
-                box.innerHTML = rec ? `<img src="${rec.photo}" class="w-full h-full object-cover rounded-lg">` : "사진 없음";
+                box.innerHTML = rec ? `<img src="${rec.photo}" class="w-full h-full object-cover rounded-lg">` : "사진이 없어요";
             };
             setBox($('firstPhotoContainer'), records[0]);
             setBox($('latestPhotoContainer'), records[records.length - 1]);
 
             const timeline = $('timelineList');
             if (records.length === 0) {
-                timeline.innerHTML = `<p class="text-center text-gray-400 py-8 text-base">${plants.length ? '아직 관찰 기록이 없어요.<br>첫 관찰 기록을 남겨보세요! 📷' : '아직 식물이 없어요.<br>+ 새 식물을 눌러 첫 식물을 심어 보세요! 🌱'}</p>`;
+                timeline.innerHTML = `<p class="text-center text-gray-400 py-8 text-base">${plants.length ? '아직 사진이 없어요.<br>📷 오늘 식물 만나기!를 눌러 봐요!' : '아직 식물 친구가 없어요.<br>+ 새 친구 심기를 눌러 봐요! 🌱'}</p>`;
                 return;
             }
 
@@ -704,8 +715,8 @@
                     <div class="flex flex-wrap gap-1.5">${((rec.stages || []).includes(STAGES[0]) ? [rec.soil] : [rec.weather, rec.leafColor, rec.leafSize, rec.soil, rec.bugState]).filter(Boolean).map(t => chip(t, 'bg-white border border-green-200 text-gray-700')).join('')}</div>
                     <div class="flex flex-wrap items-center gap-1.5"><span>👐</span>${(rec.actions || []).map(t => chip(t, 'bg-green-100 text-green-800')).join('')}</div>
                     <div class="flex justify-end gap-2 pt-1">
-                        <button type="button" onclick="openRecordModal(${Number(rec.id)})" class="text-sm bg-white border border-green-300 text-green-700 px-4 py-2.5 rounded-xl font-bold hover:bg-green-50">✏️ 수정</button>
-                        <button type="button" onclick="deleteRecordById(${Number(rec.id)})" class="text-sm bg-white border border-red-200 text-red-500 px-4 py-2.5 rounded-xl font-bold hover:bg-red-50">🗑️ 삭제</button>
+                        <button type="button" onclick="openRecordModal(${Number(rec.id)})" class="text-sm bg-white border border-green-300 text-green-700 px-4 py-2.5 rounded-xl font-bold hover:bg-green-50">✏️ 고치기</button>
+                        <button type="button" onclick="deleteRecordById(${Number(rec.id)})" class="text-sm bg-white border border-red-200 text-red-500 px-4 py-2.5 rounded-xl font-bold hover:bg-red-50">🗑️ 지우기</button>
                     </div>
                 </div>`).join('');
         }
@@ -741,7 +752,7 @@
             }
 
             if (rec) {
-                $('modalTitle').innerText = "📝 관찰 카드 수정하기";
+                $('modalTitle').innerText = "📝 기록 고치기";
                 editingDate = rec.date;
                 select.value = rec.plantId;
                 capturedImage = rec.photo;
@@ -757,8 +768,8 @@
                 setSelect('bugState', rec.bugState);
                 setSelect('weather', rec.weather);
             } else {
-                $('modalTitle').innerText = "📝 오늘의 관찰 카드 쓰기";
-                $('photoPreviewBox').innerHTML = `<span class="text-4xl mb-1">📷</span><span class="text-base font-bold">터치해서 사진 선택하기!</span>`;
+                $('modalTitle').innerText = "📝 오늘 식물 만나기";
+                $('photoPreviewBox').innerHTML = `<span class="text-4xl mb-1">📷</span><span class="text-base font-bold">여기를 눌러 사진을 넣어요!</span>`;
             }
             if (!rec) { fillBugOptions(selectedPlace()); $('bugState').selectedIndex = 0; }
             updateObservationFields();
@@ -782,8 +793,8 @@
 
         async function addNewPlant() {
             const name = $('newPlantName').value.trim();
-            if (!name) return alert('식물 이름을 입력해 주세요!');
-            if (plants.some(p => p.name === name)) return alert('이미 존재하는 식물이에요!');
+            if (!name) return alert('이름을 써 주세요!');
+            if (plants.some(p => p.name === name)) return alert('이미 있는 이름이에요!');
             const plant = { id: uid(), profileId: profile.id, name, place: newPlantPlace, createdAt: Date.now() };
             try {
                 await savePlant(plant);
@@ -792,7 +803,7 @@
                 $('newPlantName').value = '';
                 closeNewPlantModal();
                 await renderDashboard();
-            } catch (e) { alert('식물을 등록하지 못했어요.'); }
+            } catch (e) { alert('심지 못했어요. 다시 해 주세요.'); }
         }
 
         function previewImage(event) {
@@ -839,7 +850,7 @@
 
         function startSpeechRecognition() {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SR) return alert('음성 인식을 지원하지 않는 브라우저입니다. 직접 작성해 주세요!');
+            if (!SR) return alert('여기서는 마이크를 쓸 수 없어요. 글자로 써 주세요!');
 
             recognition = new SR();
             recognition.lang = 'ko-KR';
@@ -853,7 +864,7 @@
                 const btn = $('speechBtn');
                 btn.className = "bg-red-500 text-white w-14 h-14 rounded-xl text-2xl flex items-center justify-center mic-recording transition flex-shrink-0 shadow";
                 btn.innerText = "🔴";
-                $('voiceNoteInput').placeholder = "지금 말씀하세요! (터치시 종료)";
+                $('voiceNoteInput').placeholder = "지금 말해요! (다 하면 🔴를 눌러요)";
             };
             recognition.onresult = (event) => {
                 $('voiceNoteInput').value = event.results[0][0].transcript;
@@ -889,7 +900,7 @@
         // ---------- 저장 ----------
         async function saveRecord() {
             if (isSaving) return;
-            if (!capturedImage) return alert('식물 사진을 꼭 선택하거나 찍어주세요! 📷');
+            if (!capturedImage) return alert('사진을 넣어 주세요! 📷');
 
             isSaving = true;
             const btn = $('saveBtn');
