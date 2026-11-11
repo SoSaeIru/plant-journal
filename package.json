@@ -1,0 +1,12 @@
+{
+  "name": "plant-journal",
+  "private": true,
+  "description": "아이용 식물 관찰 일기 웹앱 (서버 없이 기기 안에 저장)",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "canvas-confetti": "1.6.0",
+    "tailwindcss": "3.4.17"
+  }
+}
